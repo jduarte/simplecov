@@ -16,7 +16,11 @@ module SimpleCov
 
     self.@bootsnap_watch: TracePoint?
 
+    COVERAGE_BLIND_COMPILERS: Array[Range[Gem::Version]]
+
     def self?.supported?: () -> bool
+
+    def self?.compile_keeps_coverage?: () -> bool
 
     def self?.install: (?Module target) -> void
 

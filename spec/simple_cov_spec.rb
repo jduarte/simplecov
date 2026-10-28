@@ -2822,7 +2822,7 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
         2.times { described_class.send(:start_coverage_measurement) }
 
         expect(described_class).to have_received(:warn)
-          .with("[SimpleCov]: condition coverage needs CRuby with Prism, so this run doesn't measure it.").once
+          .with("[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism, so this run doesn't measure it.").once
       end
     end
   end

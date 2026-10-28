@@ -3,7 +3,7 @@
 require "helper"
 require "support/sandbox_project"
 
-RSpec.describe "condition coverage", :sandbox, if: RUBY_ENGINE == "ruby" do
+RSpec.describe "condition coverage", :sandbox, if: SimpleCov::ConditionCoverage.supported? do
   before do
     setup_project("faked_project")
     write_file("lib/faked_project/conditions.rb", <<~RUBY)

@@ -27,12 +27,29 @@ module SimpleCov
     private_constant :OWN_SOURCE
 
     # Memoized, because a failed Prism load leaves nothing in
-    # $LOADED_FEATURES and would otherwise be retried on every question.
+    # $LOADED_FEATURES and would otherwise be retried on every question. The
+    # rewriter loads wherever Prism does, even on a Ruby that can't measure
+    # with it.
     def supported?
       return @supported if instance_variable_defined?(:@supported)
 
-      @supported = RUBY_ENGINE.eql?("ruby") && load_rewriter
+      @supported = RUBY_ENGINE.eql?("ruby") && load_rewriter && compile_keeps_coverage?
     end
+
+    # Ruby 3.4.0 to 3.4.9 and 4.0.0 to 4.0.3 never register code compiled by
+    # `RubyVM::InstructionSequence.compile` with Coverage when Prism compiles
+    # it, so a rewritten file would lose its line, branch, and method
+    # coverage to gain its conditions.
+    def compile_keeps_coverage?
+      version = Gem::Version.new(RUBY_VERSION)
+      COVERAGE_BLIND_COMPILERS.none? { |blind| blind.cover?(version) }
+    end
+
+    COVERAGE_BLIND_COMPILERS = [
+      Gem::Version.new("3.4.0")...Gem::Version.new("3.4.10"),
+      Gem::Version.new("4.0.0")...Gem::Version.new("4.0.4")
+    ].freeze
+    private_constant :COVERAGE_BLIND_COMPILERS
 
     # Takes over loading for the rest of the process. Prepending is a no-op
     # once the hook is in place, so a repeated `SimpleCov.start` changes

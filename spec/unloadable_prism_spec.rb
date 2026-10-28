@@ -36,7 +36,7 @@ RSpec.describe "A Ruby whose Prism cannot load" do
     end
 
     it "says it can't measure conditions" do
-      expect(streams[1]).to include("[SimpleCov]: condition coverage needs CRuby with Prism")
+      expect(streams[1]).to include("[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism")
     end
 
     it "reports the files all the same" do

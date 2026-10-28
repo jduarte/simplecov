@@ -2,9 +2,10 @@
 
 require "helper"
 
-# Prism's FFI backend cannot open libprism on JRuby on Windows, and nothing
-# but CRuby measures conditions anyway.
-return unless SimpleCov::ConditionCoverage.supported?
+# Asking loads the rewriter on any CRuby where Prism loads, whether or not
+# that Ruby can measure with it. Nothing else measures conditions.
+SimpleCov::ConditionCoverage.supported?
+return unless defined?(SimpleCov::ConditionCoverage::Rewriter)
 
 RSpec.describe SimpleCov::ConditionCoverage::Collector do
   def sites(source)

@@ -136,7 +136,7 @@ module SimpleCov
       return if @condition_coverage_declined
 
       @condition_coverage_declined = true
-      warn "[SimpleCov]: condition coverage needs CRuby with Prism, so this run doesn't measure it."
+      warn "[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism, so this run doesn't measure it."
     end
 
     # `Rake::TestTask` runs `ruby -e 'require "minitest/autorun"; ...'`, so

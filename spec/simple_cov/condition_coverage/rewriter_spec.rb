@@ -2,7 +2,10 @@
 
 require "helper"
 
-return unless SimpleCov::ConditionCoverage.supported?
+# Asking loads the rewriter on any CRuby where Prism loads, whether or not
+# that Ruby can measure with it.
+SimpleCov::ConditionCoverage.supported?
+return unless defined?(SimpleCov::ConditionCoverage::Rewriter)
 
 RSpec.describe SimpleCov::ConditionCoverage::Rewriter do
   let(:hits) { SimpleCov::ConditionCoverage::Hits }

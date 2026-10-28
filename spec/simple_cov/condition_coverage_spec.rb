@@ -19,8 +19,29 @@ RSpec.describe SimpleCov::ConditionCoverage do
       described_class.remove_instance_variable(:@supported) if described_class.instance_variable_defined?(:@supported)
     end
 
-    it "answers true on CRuby, where Prism loads", if: RUBY_ENGINE == "ruby" do
+    it "answers true on a CRuby whose compiled code keeps its coverage" do
+      stub_const("RUBY_ENGINE", "ruby")
+      stub_const("RUBY_VERSION", "3.4.10")
+      allow(described_class).to receive(:require_relative).and_return(true)
+
       expect(described_class.supported?).to be(true)
+    end
+
+    it "answers false on a CRuby whose compiled code loses its coverage" do
+      stub_const("RUBY_ENGINE", "ruby")
+      stub_const("RUBY_VERSION", "4.0.2")
+      allow(described_class).to receive(:require_relative).and_return(true)
+
+      expect(described_class.supported?).to be(false)
+    end
+
+    it "still loads the rewriter on a CRuby that can't measure with it" do
+      stub_const("RUBY_ENGINE", "ruby")
+      stub_const("RUBY_VERSION", "4.0.2")
+      allow(described_class).to receive(:require_relative).and_return(true)
+      described_class.supported?
+
+      expect(described_class).to have_received(:require_relative)
     end
 
     it "loads the rewriter" do
@@ -59,6 +80,18 @@ RSpec.describe SimpleCov::ConditionCoverage do
         2.times { described_class.supported? }
 
         expect(described_class).to have_received(:require_relative).once
+      end
+    end
+  end
+
+  describe ".compile_keeps_coverage?" do
+    {
+      "3.4.9" => false, "3.4.10" => true, "4.0.0" => false, "4.0.3" => false, "4.0.4" => true, "4.1.0" => true
+    }.each do |version, keeps|
+      it "answers #{keeps} for Ruby #{version}" do
+        stub_const("RUBY_VERSION", version)
+
+        expect(described_class.compile_keeps_coverage?).to be(keeps)
       end
     end
   end
@@ -116,7 +149,12 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
 
     # Asking for support is what loads the rewriter, as it is in a real run.
-    before { allow(SimpleCov).to receive(:condition_coverage?).and_return(described_class.supported?) }
+    # It loads even where this Ruby can't measure with it, which these
+    # examples don't need it to.
+    before do
+      described_class.supported?
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+    end
 
     it "answers nil when the run doesn't measure conditions" do
       allow(SimpleCov).to receive(:condition_coverage?).and_return(false)
