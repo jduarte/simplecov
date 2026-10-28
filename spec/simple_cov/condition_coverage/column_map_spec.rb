@@ -32,11 +32,29 @@ RSpec.describe SimpleCov::ConditionCoverage::ColumnMap do
     it "leaves a line without splices alone" do
       expect(map.original_column(3, 15)).to eq(15)
     end
+
+    it "moves a column right after a splice that opens a line back to the line's start" do
+      expect(described_class.new([[1, 0, 3]]).original_column(1, 3)).to eq(0)
+    end
+
+    it "places each splice past every earlier one on its line" do
+      third_splice_in = described_class.new([[1, 0, 2], [1, 5, 3], [1, 9, 4]])
+
+      expect(third_splice_in.original_column(1, 17)).to eq(12)
+    end
+
+    it "leaves a column inside a splice that opens a line alone" do
+      expect(described_class.new([[1, 0, 3]]).original_column(1, 2)).to eq(2)
+    end
   end
 
   describe "#translate" do
     it "translates both ends of a tuple, each against its own line" do
       expect(map.translate([:if, 4, 1, 9, 2, 15])).to eq([:if, 4, 1, 9, 2, 10])
+    end
+
+    it "translates the start against its own line too" do
+      expect(map.translate([:if, 4, 2, 11, 3, 1])).to eq([:if, 4, 2, 6, 3, 1])
     end
   end
 

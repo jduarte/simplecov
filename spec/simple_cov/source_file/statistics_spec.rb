@@ -196,5 +196,9 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
     it "keeps the percentage the methods earned" do
       expect(statistics.fetch(:method).percent).to eq(50.0)
     end
+
+    it "keeps the percentage the conditions earned" do
+      expect(statistics.fetch(:condition).percent).to eq(50.0)
+    end
   end
 end

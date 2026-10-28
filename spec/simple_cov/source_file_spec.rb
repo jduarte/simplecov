@@ -379,6 +379,36 @@ RSpec.describe SimpleCov::SourceFile do
     end
   end
 
+  context "when file with conditions" do
+    subject(:source_file) do
+      source_file_with(
+        {"lines" => [nil, 1, 1], "conditions" => conditions},
+        ["x = 1", "y = a && b", "z = c || d # simplecov:disable condition"]
+      )
+    end
+
+    # Two `&&` arms on line 2, one hit and one not, and a skipped `||` on
+    # line 3 whose arms are both unhit.
+    let(:conditions) do
+      {
+        [:"&&", 0, 2, 4, 2, 10] => {[:evaluated, 0, 2, 9, 2, 10] => 0, [:short_circuited, 1, 2, 6, 2, 8] => 2},
+        [:"||", 1, 3, 4, 3, 10] => {[:evaluated, 2, 3, 9, 3, 10] => 0, [:short_circuited, 3, 3, 6, 3, 8] => 0}
+      }
+    end
+
+    it "builds every arm" do
+      expect(source_file.conditions.size).to eq(4)
+    end
+
+    it "counts the hit arm as covered" do
+      expect(source_file.covered_conditions.map(&:report)).to eq([[:"&&", :short_circuited, 2]])
+    end
+
+    it "counts only the unhit arms nothing skipped as missed" do
+      expect(source_file.missed_conditions.map(&:report)).to eq([[:"&&", :evaluated, 0]])
+    end
+  end
+
   context "when coverage data contains more entries than the source has lines" do
     subject(:source_file) do
       described_class.new(source_fixture("sample.rb"), COVERAGE_FOR_SAMPLE_RB_WITH_MORE_LINES)

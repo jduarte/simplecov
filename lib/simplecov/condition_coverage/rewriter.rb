@@ -40,6 +40,10 @@ module SimpleCov
       PROBES = "::SimpleCov::ConditionCoverage::Hits::PROBES"
       private_constant :PROBES
 
+      nothing = [] #: Array[untyped]
+      NOTHING = nothing.freeze
+      private_constant :NOTHING
+
       # A splice: `text` goes in at byte `offset`. Splices sharing an offset
       # are ordered closers before openers, closers innermost first, and
       # openers outermost first, which is what keeps nested conditions
@@ -52,12 +56,12 @@ module SimpleCov
         end
       end
 
-      # Answers `[rewritten_source, conditions, column_map]`, or nil when the
-      # source doesn't parse. `file_index` is the counter array the rewritten
-      # code increments.
+      # Answers `[rewritten_source, conditions, column_map]`. Source Prism
+      # can't parse comes back as it was, with nothing to measure.
+      # `file_index` is the counter array the rewritten code increments.
       def call(source, file_index)
         result = Prism.parse(source)
-        return nil if result.failure?
+        return [source, NOTHING, ColumnMap.new(NOTHING)] if result.failure?
 
         collector = Collector.new
         result.value.accept(collector)

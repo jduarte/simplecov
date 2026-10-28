@@ -2,7 +2,7 @@
 
 require "helper"
 
-RSpec.describe SimpleCov::ConditionCoverage::Hits do
+RSpec.describe SimpleCov::ConditionCoverage::Hits, mutant_expression: "SimpleCov::ConditionCoverage::Hits*" do
   # The registry is process-wide, so every example leaves it the way it found
   # it.
   around do |example|
@@ -125,6 +125,7 @@ RSpec.describe SimpleCov::ConditionCoverage::Hits do
 
     it "answers nothing for a reservation that never committed" do
       described_class.reserve
+      register("later.rb", [condition])
 
       expect(described_class.column_maps.keys).not_to include(nil)
     end

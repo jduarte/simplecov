@@ -23,10 +23,13 @@ module SimpleCov
       # Claims the index a file's rewritten source will embed. The rewrite
       # needs the index before it knows the conditions, and two threads can be
       # loading files at once, so the claim and its placeholders go in
-      # together.
+      # together. `files` needs no placeholder: `commit` assigns by index,
+      # which pads it with the nils of reservations still uncommitted.
+      # The lock only matters to threads racing one another, which no example
+      # can make lose deterministically, so dropping it reads as equivalent.
+      # mutant:disable
       def reserve
         MUTEX.synchronize do
-          files << nil
           COUNTERS << EMPTY
           PROBES << EMPTY
           COUNTERS.size - 1

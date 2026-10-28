@@ -9,7 +9,7 @@ module SimpleCov
     # past the last hook Ruby compiles them as usual.
     module LoadHook
       def load_iseq(path)
-        ConditionCoverage.instrument(path) || (defined?(super) ? super : nil) # steep:ignore UnexpectedSuper
+        ConditionCoverage.instrument(path) || (super if defined?(super)) # steep:ignore UnexpectedSuper
       end
     end
   end

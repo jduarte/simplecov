@@ -7,7 +7,9 @@ RSpec.describe SimpleCov::ConditionCoverage do
 
   def fixture(name) = File.expand_path("../fixtures/condition_coverage/#{name}", __dir__)
 
-  describe ".supported?" do
+  describe ".supported?", mutant_expression: %w[
+    SimpleCov::ConditionCoverage#supported? SimpleCov::ConditionCoverage#load_rewriter
+  ] do
     around do |example|
       forget_support
       example.run
@@ -42,6 +44,14 @@ RSpec.describe SimpleCov::ConditionCoverage do
       described_class.supported?
 
       expect(described_class).to have_received(:require_relative)
+    end
+
+    it "answers true where the rewriter had already loaded" do
+      stub_const("RUBY_ENGINE", "ruby")
+      stub_const("RUBY_VERSION", "3.4.10")
+      allow(described_class).to receive(:require_relative).and_return(false)
+
+      expect(described_class.supported?).to be(true)
     end
 
     it "loads the rewriter" do
@@ -81,10 +91,14 @@ RSpec.describe SimpleCov::ConditionCoverage do
 
         expect(described_class).to have_received(:require_relative).once
       end
+
+      it "keeps answering false" do
+        expect(Array.new(2) { described_class.supported? }).to eq([false, false])
+      end
     end
   end
 
-  describe ".compile_keeps_coverage?" do
+  describe ".compile_keeps_coverage?", mutant_expression: "SimpleCov::ConditionCoverage#compile_keeps_coverage?" do
     {
       "3.4.9" => false, "3.4.10" => true, "4.0.0" => false, "4.0.3" => false, "4.0.4" => true, "4.1.0" => true
     }.each do |version, keeps|
@@ -96,7 +110,10 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
   end
 
-  describe ".install" do
+  describe ".install", mutant_expression: %w[
+    SimpleCov::ConditionCoverage#install SimpleCov::ConditionCoverage#install_above_bootsnap
+    SimpleCov::ConditionCoverage#bootsnap_mixin
+  ] do
     let(:target) { Class.new.singleton_class }
 
     after do
@@ -113,6 +130,23 @@ RSpec.describe SimpleCov::ConditionCoverage do
       expect(target.ancestors.first).to be(described_class::LoadHook)
     end
 
+    it "installs onto RubyVM::InstructionSequence by default" do
+      stub_const("Bootsnap::CompileCache::ISeq::InstructionSequenceMixin", Module.new)
+      allow(RubyVM::InstructionSequence).to receive(:singleton_class).and_return(target)
+
+      described_class.install
+
+      expect(target.ancestors.first).to be(described_class::LoadHook)
+    end
+
+    it "watches for nothing when bootsnap already loaded" do
+      stub_const("Bootsnap::CompileCache::ISeq::InstructionSequenceMixin", Module.new)
+
+      described_class.install(target)
+
+      expect(described_class.instance_variable_get(:@bootsnap_watch)).to be_nil
+    end
+
     it "prepends the hook into bootsnap's mixin when bootsnap already loaded" do
       mixin = stub_const("Bootsnap::CompileCache::ISeq::InstructionSequenceMixin", Module.new)
 
@@ -127,6 +161,36 @@ RSpec.describe SimpleCov::ConditionCoverage do
       expect(described_class.instance_variable_get(:@bootsnap_watch)).to be_enabled
     end
 
+    context "when bootsnap loads after it" do
+      before { described_class.install(target) }
+
+      # The watch only sees a real `module` body, which stub_const can't open.
+      after { Object.send(:remove_const, :Bootsnap) if defined?(Bootsnap) } # rubocop:disable RSpec/RemoveConst
+
+      def define_bootsnap_mixin
+        Object.class_eval(<<~RUBY, __FILE__, __LINE__ + 1)
+          module Bootsnap; module CompileCache; module ISeq; module InstructionSequenceMixin; end; end; end; end
+        RUBY
+        Object.const_get("Bootsnap::CompileCache::ISeq::InstructionSequenceMixin")
+      end
+
+      it "prepends the hook into bootsnap's mixin as it is defined" do
+        expect(define_bootsnap_mixin.ancestors.first).to be(described_class::LoadHook)
+      end
+
+      it "stops watching once it has" do
+        define_bootsnap_mixin
+
+        expect(described_class.instance_variable_get(:@bootsnap_watch)).not_to be_enabled
+      end
+
+      it "keeps watching past every other module" do
+        Module.new { def self.name = "NotBootsnap" }.module_eval("module Inner; end", __FILE__, __LINE__)
+
+        expect(described_class.instance_variable_get(:@bootsnap_watch)).to be_enabled
+      end
+    end
+
     it "watches only once however often it installs" do
       described_class.install(target)
       watch = described_class.instance_variable_get(:@bootsnap_watch)
@@ -136,7 +200,9 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
   end
 
-  describe ".instrument", if: RUBY_ENGINE == "ruby" do
+  describe ".instrument", if: RUBY_ENGINE == "ruby", mutant_expression: %w[
+    SimpleCov::ConditionCoverage#instrument SimpleCov::ConditionCoverage#compile
+  ] do
     around do |example|
       counters = hits::COUNTERS.dup
       probes = hits::PROBES.dup
@@ -166,6 +232,31 @@ RSpec.describe SimpleCov::ConditionCoverage do
       allow(described_class).to receive(:in_scope?).and_return(false)
 
       expect(described_class.instrument(fixture("sample.rb"))).to be_nil
+    end
+
+    def with_link_to(target)
+      Dir.mktmpdir do |dir|
+        linked = File.join(dir, "linked.rb")
+        File.symlink(target, linked)
+        yield linked
+      end
+    rescue NotImplementedError, SystemCallError
+      skip "no symlinks here"
+    end
+
+    it "compiles a symlinked file under the path it was loaded by, and its real path, as Ruby's loader does" do
+      allow(described_class).to receive(:in_scope?).and_return(true)
+
+      with_link_to(fixture("sample.rb")) do |linked|
+        expect(described_class.instrument(linked).then { |iseq| [iseq.path, iseq.absolute_path] })
+          .to eq([linked, fixture("sample.rb")])
+      end
+    end
+
+    it "reads a file without a magic comment as UTF-8, the way Ruby's own loader does" do
+      described_class.instrument(fixture("utf8.rb")).eval
+
+      expect(ConditionCoverageUtf8.word(true).encoding).to eq(Encoding::UTF_8)
     end
 
     it "answers nil for a file with nothing to measure, leaving Ruby to load it" do
@@ -198,6 +289,12 @@ RSpec.describe SimpleCov::ConditionCoverage do
         expect(iseq.path).to eq(fixture("sample.rb"))
       end
 
+      it "registers the column map Coverage's columns for it will need" do
+        iseq
+
+        expect(hits.column_maps.fetch(fixture("sample.rb"))).to be_a(described_class::ColumnMap)
+      end
+
       it "registers its conditions" do
         iseq
 
@@ -213,7 +310,7 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
   end
 
-  describe ".in_scope?" do
+  describe ".in_scope?", mutant_expression: "SimpleCov::ConditionCoverage#in_scope?" do
     around do |example|
       previous_cover = SimpleCov.cover_filters.dup
       previous_filters = SimpleCov.filters.dup
@@ -267,7 +364,9 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
   end
 
-  describe ".merge_into" do
+  describe ".merge_into", mutant_expression: %w[
+    SimpleCov::ConditionCoverage#merge_into SimpleCov::ConditionCoverage#translated
+  ] do
     let(:conditions) { {[:"&&", 0, 1, 0, 1, 6] => {}} }
     # Ten bytes spliced in at column 2 of line 1.
     let(:column_map) { described_class::ColumnMap.new([[1, 2, 10]]) }

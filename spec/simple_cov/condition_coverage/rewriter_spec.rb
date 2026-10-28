@@ -7,7 +7,7 @@ require "helper"
 SimpleCov::ConditionCoverage.supported?
 return unless defined?(SimpleCov::ConditionCoverage::Rewriter)
 
-RSpec.describe SimpleCov::ConditionCoverage::Rewriter do
+RSpec.describe SimpleCov::ConditionCoverage::Rewriter, mutant_expression: "SimpleCov::ConditionCoverage::Rewriter*" do
   let(:hits) { SimpleCov::ConditionCoverage::Hits }
 
   around do |example|
@@ -144,8 +144,12 @@ RSpec.describe SimpleCov::ConditionCoverage::Rewriter do
       expect(described_class.call("a && b\n", 0).last.original_column(1, 63)).to eq(2)
     end
 
-    it "answers nil for source Prism can't parse" do
-      expect(described_class.call("def f(\n", 0)).to be_nil
+    it "answers source Prism can't parse as it was, with nothing to measure" do
+      expect(described_class.call("def f(\n", 0).take(2)).to eq(["def f(\n", []])
+    end
+
+    it "answers a column map that moves nothing for source Prism can't parse" do
+      expect(described_class.call("def f(\n", 0).last.original_column(1, 5)).to eq(5)
     end
   end
 

@@ -4,8 +4,6 @@ module SimpleCov
 
     OWN_SOURCE: String
 
-    NOT_LOADED_YET: Hash[String, Array[untyped]]
-
     NOTHING_MEASURED: Hash[Symbol, untyped]
 
     @supported: bool

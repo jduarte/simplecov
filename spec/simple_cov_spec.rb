@@ -2799,6 +2799,16 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
         expect(SimpleCov::ConditionCoverage).to have_received(:install)
       end
 
+      it "measures no lines it wasn't asked to alongside another Coverage mode" do
+        allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
+        described_class.enable_coverage :branch
+        described_class.disable_coverage :line
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(Coverage).to have_received(:start).with({branches: true})
+      end
+
       it "still starts Coverage in its hash mode when conditions are all the run measures" do
         allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
         described_class.disable_coverage :line

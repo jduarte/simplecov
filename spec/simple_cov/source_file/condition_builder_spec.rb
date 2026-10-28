@@ -35,6 +35,14 @@ RSpec.describe SimpleCov::SourceFile::ConditionBuilder do
     expect(build(and_condition)).to all(have_attributes(report_line: 2, operator: :"&&"))
   end
 
+  it "finds the operator's line whichever order the arms come in" do
+    short_first = {
+      [:"||", 0, 2, 4, 4, 5] => {[:short_circuited, 1, 3, 2, 3, 4] => 1, [:evaluated, 0, 4, 0, 4, 5] => 0}
+    }
+
+    expect(build(short_first, ["x = 1", "y = (a", "  ||", "  b)"])).to all(have_attributes(report_line: 3))
+  end
+
   it "reads conditions a resultset stored as strings" do
     stored = and_condition.to_h { |condition, arms| [condition.inspect, arms.transform_keys(&:inspect)] }
 

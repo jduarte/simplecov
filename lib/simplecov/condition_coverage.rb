@@ -41,8 +41,7 @@ module SimpleCov
     # it, so a rewritten file would lose its line, branch, and method
     # coverage to gain its conditions.
     def compile_keeps_coverage?
-      version = Gem::Version.new(RUBY_VERSION)
-      COVERAGE_BLIND_COMPILERS.none? { |blind| blind.cover?(version) }
+      COVERAGE_BLIND_COMPILERS.none? { |blind| blind.cover?(RUBY_VERSION) }
     end
 
     COVERAGE_BLIND_COMPILERS = [
@@ -74,19 +73,15 @@ module SimpleCov
     # says counts: the root, the path-only `skip` filters, and the path-only
     # `cover` filters. A filter that needs more can't say no yet, so its files
     # are measured and the report's own filtering drops them later.
+    # `UnloadedFileInjector.rejected?` answers whether any of the filters it's
+    # given matches the path, which for `cover` is a match to keep.
     def in_scope?(path)
       return false if path.start_with?(OWN_SOURCE) || !path.match?(UselessResultsRemover.root_regex)
-
-      candidate = SourceFile.new(path, NOT_LOADED_YET, loaded: false)
-      return false if SimpleCov.filters.any? { |filter| filter.path_only? && filter.matches?(candidate) }
+      return false if UnloadedFileInjector.rejected?(path, SimpleCov.filters.select(&:path_only?))
 
       covers = SimpleCov.cover_filters
-      covers.empty? || covers.any? { |filter| !filter.path_only? || filter.matches?(candidate) }
+      covers.empty? || covers.any? { |filter| !filter.path_only? || UnloadedFileInjector.rejected?(path, [filter]) }
     end
-
-    not_loaded_yet = {"lines" => []} #: Hash[String, Array[untyped]]
-    NOT_LOADED_YET = not_loaded_yet.freeze
-    private_constant :NOT_LOADED_YET
 
     nothing_measured = {} #: Hash[Symbol, untyped]
     NOTHING_MEASURED = nothing_measured.freeze
@@ -119,12 +114,9 @@ module SimpleCov
     # loader would see them.
     def compile(path, source)
       file_index = Hits.reserve
-      # Nothing Prism could parse, or nothing to measure: Ruby loads the file
+      rewritten, conditions, column_map = Rewriter.call(source, file_index)
+      # Nothing to measure, or nothing Prism could parse: Ruby loads the file
       # itself, and the reservation stays empty.
-      rewrite = Rewriter.call(source, file_index)
-      return nil unless rewrite
-
-      rewritten, conditions, column_map = rewrite
       return nil if conditions.empty?
 
       # RBS's core signatures leave `compile` out.
@@ -152,8 +144,9 @@ module SimpleCov
 
       @bootsnap_watch ||= TracePoint.new(:class) do |trace|
         # simplecov:disable — Coverage does not count code run inside a TracePoint callback
+        # A class event's self is always the module being opened.
         defined = trace.self
-        if defined.is_a?(Module) && defined.name.eql?(BOOTSNAP_MIXIN)
+        if defined.name.eql?(BOOTSNAP_MIXIN)
           defined.prepend(LoadHook)
           trace.disable
         end
@@ -161,6 +154,9 @@ module SimpleCov
       end.tap(&:enable)
     end
 
+    # A module's own constant lookup reaches the top level too, so asking
+    # `self` rather than `Object` reads as equivalent.
+    # mutant:disable
     def bootsnap_mixin
       Object.const_get(BOOTSNAP_MIXIN) if Object.const_defined?(BOOTSNAP_MIXIN)
     end

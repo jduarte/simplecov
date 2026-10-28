@@ -14,7 +14,9 @@ module SimpleCov
 
       PROBES: String
 
-      def self?.call: (String source, Integer file_index) -> [String, Array[Condition], ColumnMap]?
+      NOTHING: Array[untyped]
+
+      def self?.call: (String source, Integer file_index) -> [String, Array[Condition], ColumnMap]
 
       private
 
