@@ -183,4 +183,28 @@ RSpec.describe SimpleCov::FileList do
       expect(branch_only_file_list.send(:enabled_criteria_for_reporting)).to contain_exactly(:branch)
     end
   end
+
+  describe "when condition coverage is measured" do
+    let(:file_list) do
+      line_stat = SimpleCov::CoverageStatistics.new(covered: 1, missed: 0)
+      condition_stat = SimpleCov::CoverageStatistics.new(covered: 1, missed: 1)
+      source_file = instance_double(SimpleCov::SourceFile,
+        coverage_statistics: {line: line_stat, condition: condition_stat})
+      described_class.new([source_file])
+    end
+
+    before do
+      allow(SimpleCov).to receive_messages(
+        line_coverage?: true, branch_coverage?: false, method_coverage?: false, condition_coverage?: true
+      )
+    end
+
+    it "reports it after the criteria Ruby's Coverage measures" do
+      expect(file_list.send(:enabled_criteria_for_reporting)).to eq(%i[line condition])
+    end
+
+    it "totals it like any other criterion" do
+      expect(file_list.covered_percent(:condition)).to eq(50.0)
+    end
+  end
 end

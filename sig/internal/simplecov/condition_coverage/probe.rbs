@@ -1,0 +1,21 @@
+module SimpleCov
+  module ConditionCoverage
+    class Probe
+      @counters: Array[Integer]
+
+      @evaluated: Integer
+
+      @other: Integer
+
+      def initialize: (Array[Integer] counters, Integer condition) -> void
+
+      def and_left: [T] (T value) -> T
+
+      def or_left: [T] (T value) -> T
+
+      def value: [T] (T value) -> T
+
+      def write: [T] (T value) -> T
+    end
+  end
+end

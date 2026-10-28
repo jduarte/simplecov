@@ -95,23 +95,23 @@ RSpec.describe SimpleCov::Directive::Haml do
     end
 
     it "finds a block directive written as Haml comments" do
-      expect(ranges_for(haml_comments)).to eq(line: [2..5], branch: [2..5], method: [2..5])
+      expect(ranges_for(haml_comments)).to eq(line: [2..5], branch: [2..5], method: [2..5], condition: [2..5])
     end
 
     it "finds a block directive written as Ruby comments on silent script lines" do
-      expect(ranges_for(ruby_comments)).to eq(line: [2..5], branch: [], method: [])
+      expect(ranges_for(ruby_comments)).to eq(line: [2..5], branch: [], method: [], condition: [])
     end
 
     it "treats a directive trailing an output line as inline" do
-      expect(ranges_for(%(%h1= @foo.bar\n= raise "absurd" # simplecov:disable\n))).to eq(line: [2..2], branch: [2..2], method: [2..2])
+      expect(ranges_for(%(%h1= @foo.bar\n= raise "absurd" # simplecov:disable\n))).to eq(line: [2..2], branch: [2..2], method: [2..2], condition: [2..2])
     end
 
     it "treats a directive trailing a tag's output as inline" do
-      expect(ranges_for(%(%h1= @foo.bar\n%p= raise "absurd" # simplecov:disable\n))).to eq(line: [2..2], branch: [2..2], method: [2..2])
+      expect(ranges_for(%(%h1= @foo.bar\n%p= raise "absurd" # simplecov:disable\n))).to eq(line: [2..2], branch: [2..2], method: [2..2], condition: [2..2])
     end
 
     it "ignores a directive marker inside a string" do
-      expect(ranges_for(%(= "# simplecov:disable"\n%p= @footer\n))).to eq(line: [], branch: [], method: [])
+      expect(ranges_for(%(= "# simplecov:disable"\n%p= @footer\n))).to eq(line: [], branch: [], method: [], condition: [])
     end
   end
 end

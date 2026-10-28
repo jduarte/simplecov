@@ -2,7 +2,7 @@
 
 module SimpleCov
   module Configuration
-    SUPPORTED_COVERAGE_CRITERIA = %i[line branch method oneshot_line].freeze
+    SUPPORTED_COVERAGE_CRITERIA = %i[line branch method condition oneshot_line].freeze
     DEFAULT_COVERAGE_CRITERION = :line
     ONESHOT_LINE_COVERAGE_CRITERION = :oneshot_line
     LINE_COVERAGE_ALTERNATIVES = {line: :oneshot_line, oneshot_line: :line}.freeze #: line_coverage_alternatives
@@ -56,7 +56,7 @@ module SimpleCov
 
       raise ConfigurationError,
         "At least one coverage criterion must be enabled. " \
-        "Re-enable one with `enable_coverage :line`, `:branch`, or `:method`."
+        "Re-enable one with `enable_coverage :line`, `:branch`, `:method`, or `:condition`."
     end
 
     # Whether this run produces line data at all. The oneshot variant counts:
@@ -82,6 +82,19 @@ module SimpleCov
 
     def method_coverage_supported?
       coverage_criterion_supported?(:methods)
+    end
+
+    # Ruby's Coverage has no mode for this one, so its support is SimpleCov's
+    # own question: CRuby, where loading can be taken over, with Prism to
+    # rewrite what it loads (see `ConditionCoverage`). Enablement is asked
+    # first, since answering support means trying to load Prism, which a run
+    # not measuring conditions should never do.
+    def condition_coverage?
+      coverage_criterion_enabled?(:condition) && condition_coverage_supported?
+    end
+
+    def condition_coverage_supported?
+      ConditionCoverage.supported?
     end
 
     def coverage_criterion_supported?(criterion)

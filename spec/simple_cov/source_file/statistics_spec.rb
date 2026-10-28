@@ -21,6 +21,10 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
 
   def missed_method = instance_double(SimpleCov::SourceFile::Method, coverage: 0)
 
+  def covered_condition = instance_double(SimpleCov::SourceFile::Condition, coverage: 3)
+
+  def missed_condition = instance_double(SimpleCov::SourceFile::Condition, coverage: 0)
+
   let(:source_file) do
     instance_double(
       SimpleCov::SourceFile,
@@ -32,6 +36,8 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
       missed_branches: [missed_branch],
       covered_methods: [covered_method],
       missed_methods: [missed_method, missed_method],
+      covered_conditions: [covered_condition, covered_condition],
+      missed_conditions: [missed_condition],
       not_loaded?: false
     )
   end
@@ -62,7 +68,7 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
   end
 
   it "reports on every criterion, whichever ones the run measured" do
-    expect(statistics.keys).to contain_exactly(:line, :branch, :method)
+    expect(statistics.keys).to contain_exactly(:line, :branch, :method, :condition)
   end
 
   context "when a tracked file was not loaded" do
@@ -76,13 +82,15 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
         missed_branches: [],
         covered_methods: [],
         missed_methods: [],
-        coverage_data: {"branches" => {}, "methods" => {}},
+        covered_conditions: [],
+        missed_conditions: [],
+        coverage_data: {"branches" => {}, "methods" => {}, "conditions" => {}},
         not_loaded?: true
       )
     end
 
-    it "reports its empty branch and method sets as fully covered, the way a loaded file's are" do
-      expect(statistics.values_at(:branch, :method)).to all(have_attributes(percent: 100.0))
+    it "reports its empty branch, method, and condition sets as fully covered, the way a loaded file's are" do
+      expect(statistics.values_at(:branch, :method, :condition)).to all(have_attributes(percent: 100.0))
     end
   end
 
@@ -97,13 +105,15 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
         missed_branches: [],
         covered_methods: [],
         missed_methods: [],
+        covered_conditions: [],
+        missed_conditions: [],
         coverage_data: {"lines" => []},
         not_loaded?: true
       )
     end
 
-    it "keeps empty branch and method coverage at zero percent and strength" do
-      expect(statistics.values_at(:branch, :method)).to all(have_attributes(percent: 0.0, strength: 0.0))
+    it "keeps empty branch, method, and condition coverage at zero percent and strength" do
+      expect(statistics.values_at(:branch, :method, :condition)).to all(have_attributes(percent: 0.0, strength: 0.0))
     end
 
     it "leaves line coverage to the empty-set default" do
@@ -122,18 +132,20 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
         missed_branches: [],
         covered_methods: [],
         missed_methods: [],
+        covered_conditions: [],
+        missed_conditions: [],
         not_loaded?: false
       )
     end
 
     it "reports every criterion as fully covered" do
-      expect(statistics.values_at(:line, :branch, :method)).to all(have_attributes(percent: 100.0))
+      expect(statistics.values_at(:line, :branch, :method, :condition)).to all(have_attributes(percent: 100.0))
     end
 
     it "reports it as fully covered even carrying no tables, the rule speaking only for unloaded files" do
       allow(source_file).to receive(:coverage_data).and_return({})
 
-      expect(statistics.values_at(:line, :branch, :method)).to all(have_attributes(percent: 100.0))
+      expect(statistics.values_at(:line, :branch, :method, :condition)).to all(have_attributes(percent: 100.0))
     end
   end
 
@@ -148,6 +160,8 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
         missed_branches: [],
         covered_methods: [],
         missed_methods: [],
+        covered_conditions: [],
+        missed_conditions: [],
         not_loaded?: false
       )
     end
@@ -168,6 +182,8 @@ RSpec.describe SimpleCov::SourceFile::Statistics do
         missed_branches: [missed_branch],
         covered_methods: [covered_method],
         missed_methods: [missed_method],
+        covered_conditions: [covered_condition],
+        missed_conditions: [missed_condition],
         coverage_data: {},
         not_loaded?: true
       )

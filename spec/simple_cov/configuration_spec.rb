@@ -2600,6 +2600,44 @@ RSpec.describe SimpleCov::Configuration do
     end
   end
 
+  describe "#condition_coverage?" do
+    it "returns true if condition coverage is being measured" do
+      allow(config).to receive(:condition_coverage_supported?).and_return(true)
+      config.enable_coverage :condition
+
+      expect(config).to be_condition_coverage
+    end
+
+    it "returns false for line coverage" do
+      allow(config).to receive(:condition_coverage_supported?).and_return(true)
+
+      expect(config).not_to be_condition_coverage
+    end
+
+    it "returns false where the runtime cannot measure conditions, even when asked to" do
+      config.enable_coverage :condition
+      allow(config).to receive(:condition_coverage_supported?).and_return(false)
+
+      expect(config).not_to be_condition_coverage
+    end
+
+    it "never asks about support when conditions aren't enabled, since that means loading Prism" do
+      allow(config).to receive(:condition_coverage_supported?)
+
+      config.condition_coverage?
+
+      expect(config).not_to have_received(:condition_coverage_supported?)
+    end
+  end
+
+  describe "#condition_coverage_supported?" do
+    it "answers whatever condition coverage itself says" do
+      allow(SimpleCov::ConditionCoverage).to receive(:supported?).and_return(:verdict)
+
+      expect(config.condition_coverage_supported?).to eq(:verdict)
+    end
+  end
+
   describe "#enable_coverage with :method" do
     it "can enable method coverage" do
       config.enable_coverage :method
@@ -4450,7 +4488,7 @@ RSpec.describe SimpleCov::Configuration do
           "minimum_coverage_by_file keys must be Symbol (criterion), String, or Regexp; got 42"],
       "an unsupported criterion" =>
         [->(config) { config.enable_coverage :sentence },
-          "Unsupported coverage criterion sentence, supported values are [:line, :branch, :method, :oneshot_line]"]
+          "Unsupported coverage criterion sentence, supported values are [:line, :branch, :method, :condition, :oneshot_line]"]
     }.each do |description, (invocation, message)|
       it "names the setting and the value for #{description}" do
         expect { capture_stderr { invocation.call(config) } }

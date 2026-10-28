@@ -1,0 +1,41 @@
+module SimpleCov
+  module ConditionCoverage
+    BOOTSNAP_MIXIN: String
+
+    OWN_SOURCE: String
+
+    NOT_LOADED_YET: Hash[String, Array[untyped]]
+
+    NOTHING_MEASURED: Hash[Symbol, untyped]
+
+    @supported: bool
+
+    @bootsnap_watch: TracePoint?
+
+    self.@supported: bool
+
+    self.@bootsnap_watch: TracePoint?
+
+    def self?.supported?: () -> bool
+
+    def self?.install: (?Module target) -> void
+
+    def self?.instrument: (String path) -> RubyVM::InstructionSequence?
+
+    def self?.in_scope?: (String path) -> bool
+
+    def self?.merge_into: (Hash[String, untyped] coverage_result) -> Hash[String, untyped]
+
+    private
+
+    def self?.translated: (Hash[Symbol, untyped] entry, ColumnMap column_map) -> Hash[Symbol, untyped]
+
+    def self?.compile: (String path, String source) -> RubyVM::InstructionSequence?
+
+    def self?.load_rewriter: () -> bool
+
+    def self?.install_above_bootsnap: () -> void
+
+    def self?.bootsnap_mixin: () -> Module?
+  end
+end

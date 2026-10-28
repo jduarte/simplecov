@@ -14,7 +14,8 @@ module SimpleCov
         {
           **line_statistics,
           **branch_statistics,
-          **method_statistics
+          **method_statistics,
+          **condition_statistics
         }
       end
 
@@ -46,6 +47,15 @@ module SimpleCov
         percent = 0.0 if covered.empty? && unaccounted?(sf, "methods")
 
         {method: coverage_statistics(covered, missed, percent: percent)}
+      end
+
+      def condition_statistics
+        sf = @source_file
+        covered = sf.covered_conditions
+        missed = sf.missed_conditions
+        percent = 0.0 if covered.empty? && unaccounted?(sf, "conditions")
+
+        {condition: coverage_statistics(covered, missed, percent: percent)}
       end
 
       # A file tracked but never loaded once carried no branch or method tuples

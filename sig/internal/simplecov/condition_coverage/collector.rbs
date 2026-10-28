@@ -1,0 +1,65 @@
+module SimpleCov
+  module ConditionCoverage
+    class Collector < ::Prism::Visitor
+      class Site
+        attr_reader condition: Condition
+        attr_reader node: untyped
+        attr_reader left: untyped
+        attr_reader right: untyped
+        attr_reader depth: Integer
+
+        def initialize: (condition: Condition, node: untyped, left: untyped, right: untyped, depth: Integer) -> void
+
+        def with: (?condition: Condition, ?node: untyped, ?left: untyped, ?right: untyped, ?depth: Integer) -> Site
+      end
+
+      KIND_BY_OPERATOR: Hash[Symbol, Symbol]
+
+      CONDITION_ONLY_NODES: Array[Class]
+
+      @depth: Integer
+
+      attr_reader sites: Array[Site]
+
+      def initialize: () -> void
+
+      def visit_and_node: (untyped node) -> untyped
+
+      def visit_or_node: (untyped node) -> untyped
+
+      def visit_defined_node: (untyped node) -> nil
+
+      def visit_call_and_write_node: (untyped node) -> untyped
+      def visit_call_or_write_node: (untyped node) -> untyped
+      def visit_class_variable_and_write_node: (untyped node) -> untyped
+      def visit_class_variable_or_write_node: (untyped node) -> untyped
+      def visit_constant_and_write_node: (untyped node) -> untyped
+      def visit_constant_or_write_node: (untyped node) -> untyped
+      def visit_constant_path_and_write_node: (untyped node) -> untyped
+      def visit_constant_path_or_write_node: (untyped node) -> untyped
+      def visit_global_variable_and_write_node: (untyped node) -> untyped
+      def visit_global_variable_or_write_node: (untyped node) -> untyped
+      def visit_index_and_write_node: (untyped node) -> untyped
+      def visit_index_or_write_node: (untyped node) -> untyped
+      def visit_instance_variable_and_write_node: (untyped node) -> untyped
+      def visit_instance_variable_or_write_node: (untyped node) -> untyped
+      def visit_local_variable_and_write_node: (untyped node) -> untyped
+      def visit_local_variable_or_write_node: (untyped node) -> untyped
+
+      private
+
+      def measure_operator: (Symbol operator, untyped node) { () -> untyped } -> untyped
+
+      def measure_write: (Symbol operator, untyped node) { () -> untyped } -> untyped
+
+      def record: (Symbol operator, untyped node, left: untyped, right: untyped) { () -> untyped } -> untyped
+
+      def condition: (Symbol operator, untyped node, untyped right, Integer index, write: bool) -> Condition
+
+      def tuple: (Symbol type, Integer id, untyped location) -> Condition::tuple
+
+      def condition_only?: (untyped node) -> bool
+
+    end
+  end
+end

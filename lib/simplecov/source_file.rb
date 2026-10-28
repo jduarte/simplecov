@@ -9,6 +9,7 @@ require_relative "source_file/builder_context"
 require_relative "source_file/line_builder"
 require_relative "source_file/branch_builder"
 require_relative "source_file/method_builder"
+require_relative "source_file/condition_builder"
 require_relative "source_file/statistics"
 
 module SimpleCov
@@ -150,6 +151,18 @@ module SimpleCov
       Deprecation.warn("`SimpleCov::SourceFile#methods_coverage_percent` is deprecated. " \
                        "Use `covered_percent(:method)`.")
       covered_percent(:method)
+    end
+
+    def conditions
+      @conditions ||= ConditionBuilder.new(self).call
+    end
+
+    def covered_conditions
+      @covered_conditions ||= conditions.select(&:covered?)
+    end
+
+    def missed_conditions
+      @missed_conditions ||= conditions.select(&:missed?)
     end
 
     def not_loaded?

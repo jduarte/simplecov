@@ -167,7 +167,7 @@ module SimpleCov
       # ActionView, which rules out the merge point that does the same job for
       # unloaded `.rb` files.
       ViewCoverage.compile_unrendered
-      raw = UselessResultsRemover.call(Coverage.result)
+      raw = UselessResultsRemover.call(measured_coverage)
       adapted = ResultAdapter.call(raw)
       # `Result#to_hash` serializes coverage after filtering, so a file this
       # process loaded and then filtered out would otherwise be recorded as
@@ -176,6 +176,12 @@ module SimpleCov
       tracked = tracked_file_paths - adapted.keys
       result, not_loaded = inject_unloaded ? inject_unloaded_files(adapted, tracked) : [adapted, Set.new]
       current_run.result = build_result(raw, result, not_loaded: not_loaded, tracked: tracked, report: report)
+    end
+
+    # Ruby's Coverage, plus the conditions SimpleCov counted itself.
+    def measured_coverage
+      coverage = Coverage.result
+      condition_coverage? ? ConditionCoverage.merge_into(coverage) : coverage
     end
 
     def build_result(raw, coverage, not_loaded:, tracked:, report:)

@@ -1,5 +1,5 @@
 module SimpleCov
-  type criterion = :line | :branch | :method
+  type criterion = :line | :branch | :method | :condition
   type line_coverage_alternatives = Hash[criterion | :oneshot_line, :line | :oneshot_line]
 
   type filter_arg = String | Regexp | Filter[untyped] | ^(SourceFile source_file) -> boolish | Array[filter_arg]
@@ -26,6 +26,7 @@ module SimpleCov
   self.@autoloading_dot_simplecov: bool?
   self.@dot_simplecov_start_warned: bool?
   self.@at_exit_hook_installed: bool?
+  self.@condition_coverage_declined: bool?
   self.@run_id: String?
   self.@worker_id: String?
 
@@ -74,6 +75,8 @@ module SimpleCov
   def self.start_tracking: () -> void
 
   def self.start_coverage_measurement: () -> void
+
+  def self.start_condition_coverage: () -> void
 
   def self.minitest_autorun_pending?: () -> bool
 
@@ -128,6 +131,8 @@ module SimpleCov
   def self.collect_own_coverage: (standalone: bool) -> void
 
   def self.process_coverage_result: (report: bool, ?inject_unloaded: bool) -> void
+
+  def self.measured_coverage: () -> Hash[String, untyped]
 end
 
 
@@ -220,6 +225,10 @@ module SimpleCov
     def method_coverage?: () -> bool
 
     def method_coverage_supported?: () -> bool
+
+    def condition_coverage?: () -> bool
+
+    def condition_coverage_supported?: () -> bool
 
     def coverage_criterion_supported?: (Symbol criterion) -> bool
 
@@ -825,6 +834,9 @@ module SimpleCov
     @methods: Array[Method]?
     @covered_methods: Array[Method]?
     @missed_methods: Array[Method]?
+    @conditions: Array[Condition]?
+    @covered_conditions: Array[Condition]?
+    @missed_conditions: Array[Condition]?
 
     def project_filename: () -> String
     def src: () -> Array[String]
@@ -860,6 +872,10 @@ module SimpleCov
     def covered_methods: () -> Array[Method]
     def missed_methods: () -> Array[Method]
     def methods_coverage_percent: () -> Float?
+
+    def conditions: () -> Array[Condition]
+    def covered_conditions: () -> Array[Condition]
+    def missed_conditions: () -> Array[Condition]
 
     def not_loaded?: () -> bool
   end
@@ -919,6 +935,31 @@ end
 
 module SimpleCov
   class SourceFile
+    class Condition
+      attr_reader start_line: Integer
+      attr_reader end_line: Integer
+      attr_reader coverage: Integer
+      attr_reader type: Symbol
+      attr_reader operator: Symbol
+      attr_reader report_line: Integer
+
+      @skipped: bool
+
+      def initialize: (start_line: Integer, end_line: Integer, coverage: Integer, type: Symbol, operator: Symbol, report_line: Integer) -> void
+
+      def covered?: () -> bool
+      def missed?: () -> bool
+      def skipped!: () -> void
+      def skipped?: () -> bool
+      def overlaps_with?: (Range[Integer] line_range) -> bool
+      def report: () -> [ Symbol, Symbol, Integer ]
+    end
+  end
+end
+
+
+module SimpleCov
+  class SourceFile
     class Method
       attr_reader source_file: SourceFile
       attr_reader coverage: Integer
@@ -963,9 +1004,11 @@ module SimpleCov
 
       def method_statistics: () -> Hash[criterion, CoverageStatistics]
 
+      def condition_statistics: () -> Hash[criterion, CoverageStatistics]
+
       def unaccounted?: (SourceFile source_file, String table) -> bool
 
-      def coverage_statistics: (Array[Line | Branch | Method] covered, Array[Line | Branch | Method] missed, ?omitted: Integer, ?percent: Float?) -> CoverageStatistics
+      def coverage_statistics: (Array[Line | Branch | Method | Condition] covered, Array[Line | Branch | Method | Condition] missed, ?omitted: Integer, ?percent: Float?) -> CoverageStatistics
     end
   end
 end
