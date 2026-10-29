@@ -50,6 +50,14 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::ErrorsFormatter,
     end
   end
 
+  it "reports a condition violation under conditions" do
+    conditions = {condition: SimpleCov::CoverageStatistics.new(covered: 1, missed: 3)}
+    allow(SimpleCov).to receive(:minimum_coverage).and_return(condition: 50)
+
+    expect(described_class.call(instance_double(SimpleCov::Result, files: [], coverage_statistics: conditions, groups: {})))
+      .to eq(minimum_coverage: {conditions: {expected: 50, actual: 25.0}})
+  end
+
   it "reports a violation keyed on :oneshot_line under lines" do
     allow(SimpleCov).to receive(:minimum_coverage).and_return(oneshot_line: 95)
 

@@ -10,7 +10,7 @@ module SimpleCov
 
     # The plural unit each criterion's misses count in, for the checks that report
     # counts rather than percents.
-    UNITS = {line: "lines", branch: "branches", method: "methods"}.freeze
+    UNITS = {line: "lines", branch: "branches", method: "methods", condition: "conditions"}.freeze
 
     # Threshold-violation reports and exit-status notices are the output of the
     # enforcement feature, not Ruby warnings: routing them through `Kernel#warn`

@@ -52,6 +52,20 @@ RSpec.describe SimpleCov::ExitCodes::MaximumMissedCheck,
     end
   end
 
+  context "with a cap on conditions" do
+    let(:result) do
+      instance_double(
+        SimpleCov::Result,
+        coverage_statistics: {condition: SimpleCov::CoverageStatistics.new(covered: 3, missed: 4)}
+      )
+    end
+    let(:maximum_missed) { {condition: 1} }
+
+    it "reports them in their own units" do
+      expect(check.report_lines.join("\n")).to include("Missed conditions (4)")
+    end
+  end
+
   context "when the capped criterion was not measured" do
     let(:result) do
       instance_double(

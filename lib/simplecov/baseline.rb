@@ -25,7 +25,7 @@ module SimpleCov
 
     # The YAML file speaks the report's vocabulary; internally floors are keyed
     # by criterion the way the threshold configuration is.
-    CRITERIA = {"lines" => :line, "branches" => :branch, "methods" => :method}.freeze
+    CRITERIA = {"lines" => :line, "branches" => :branch, "methods" => :method, "conditions" => :condition}.freeze
     private_constant :CRITERIA
 
     # `missed` is nil for a hand-written percent-only entry, meaning the

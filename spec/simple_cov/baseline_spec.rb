@@ -33,6 +33,12 @@ RSpec.describe SimpleCov::Baseline do
       expect(per_criterion_baseline.floor_for("lib/foo.rb", :branch)).to have_attributes(percent: 25.0, missed: 48)
     end
 
+    it "parses a floor for conditions" do
+      baseline = read_baseline("lib/foo.rb:\n  conditions:\n    percent: 60.0\n    missed: 4\n")
+
+      expect(baseline.floor_for("lib/foo.rb", :condition)).to have_attributes(percent: 60.0, missed: 4)
+    end
+
     it "accepts a bare number as a line-percent floor" do
       baseline = read_baseline("lib/foo.rb: 41.2\n")
 
@@ -64,7 +70,7 @@ RSpec.describe SimpleCov::Baseline do
       expect_rejection(
         "lib/foo.rb:\n  bogus: 41.2\n",
         "baseline file %<path>s: unknown criterion \"bogus\" for lib/foo.rb " \
-        "(expected lines, branches, or methods)"
+        "(expected lines, branches, methods, or conditions)"
       )
     end
 

@@ -44,6 +44,31 @@ RSpec.describe "condition coverage", :sandbox, if: SimpleCov::ConditionCoverage.
     end
   end
 
+  context "when a condition threshold fails" do
+    let!(:result) do
+      configure_simplecov(:rspec, <<~RUBY)
+        require 'simplecov'
+        SimpleCov.start do
+          enable_coverage :condition
+          coverage :condition, minimum: 90
+        end
+      RUBY
+      run_command(sorted_rspec_command)
+    end
+
+    it "fails the run with the coverage exit status" do
+      expect(result.exit_status).to eq(SimpleCov::ExitCodes::MINIMUM_COVERAGE)
+    end
+
+    it "says which condition threshold failed" do
+      expect(result.output).to include("Condition coverage (50.00%) is below the expected minimum coverage (90.00%).")
+    end
+
+    it "still writes the report" do
+      expect_coverage_report_generated(result)
+    end
+  end
+
   context "when not enabled" do
     let!(:result) do
       configure_simplecov(:rspec, <<~RUBY)

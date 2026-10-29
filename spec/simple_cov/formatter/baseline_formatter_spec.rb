@@ -244,6 +244,29 @@ RSpec.describe SimpleCov::Formatter::BaselineFormatter do
     end
   end
 
+  context "when condition coverage is enabled" do
+    def result
+      SimpleCov::Result.new({
+        source_fixture("json/sample.rb") => {
+          "lines" => [1, 0, 1],
+          "conditions" => {[:"&&", 0, 1, 0, 1, 6] => {
+            [:evaluated, 0, 1, 5, 1, 6] => 0,
+            [:short_circuited, 1, 1, 2, 1, 4] => 3
+          }}
+        }
+      })
+    end
+
+    before do
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+      formatted
+    end
+
+    it "includes condition floors" do
+      expect(read_baseline.floor_for(project_filename, :condition)).to have_attributes(percent: 50.0, missed: 1)
+    end
+  end
+
   context "with silent: true" do
     let(:formatted) { capture_stderr { described_class.new(silent: true).format(result) } }
 
