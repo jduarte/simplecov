@@ -44,6 +44,39 @@ RSpec.describe "condition coverage", :sandbox, if: SimpleCov::ConditionCoverage.
     end
   end
 
+  context "when memoized paths are ignored" do
+    let!(:result) do
+      write_file("lib/faked_project/memo.rb", <<~RUBY)
+        # frozen_string_literal: true
+
+        module Memo
+          def self.value(cache) = cache[:value] ||= :computed
+        end
+      RUBY
+      write_file("spec/memo_spec.rb", <<~RUBY)
+        # frozen_string_literal: true
+
+        require "spec_helper"
+
+        describe Memo do
+          it("computes once") { expect(Memo.value({})).to eq(:computed) }
+        end
+      RUBY
+      configure_simplecov(:rspec, <<~RUBY)
+        require 'simplecov'
+        SimpleCov.start do
+          enable_coverage :condition
+          coverage(:condition) { ignore :memoized }
+        end
+      RUBY
+      run_command_and_expect_success(sorted_rspec_command)
+    end
+
+    it "counts the memo's computing arm but not its cached one" do
+      expect(result.output).to include("Condition coverage: 2 / 3 (66.66%)")
+    end
+  end
+
   context "when a condition threshold fails" do
     let!(:result) do
       configure_simplecov(:rspec, <<~RUBY)

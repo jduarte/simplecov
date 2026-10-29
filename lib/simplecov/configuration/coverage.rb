@@ -141,9 +141,11 @@ module SimpleCov
         case @criterion
         when :branch then @config.__send__(:store_ignored_branches, types.flatten)
         when :method then @config.__send__(:store_ignored_methods, types.flatten)
+        when :condition then @config.__send__(:store_ignored_conditions, types.flatten)
         else
           raise ConfigurationError,
-            "`ignore` is supported for `coverage :branch` and `coverage :method`, not #{@criterion.inspect}"
+            "`ignore` is supported for `coverage :branch`, `coverage :method`, and `coverage :condition`, " \
+            "not #{@criterion.inspect}"
         end
       end
 

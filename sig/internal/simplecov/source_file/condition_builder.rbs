@@ -14,6 +14,8 @@ module SimpleCov
       def operator_line: (Array[[Array[untyped], Integer]] parsed) -> Integer
 
       def process_skipped: (Array[Condition] conditions) -> Array[Condition]
+
+      def cached_path?: (Condition condition) -> bool
     end
   end
 end

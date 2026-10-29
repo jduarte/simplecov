@@ -460,8 +460,11 @@ module SimpleCov
 
     IGNORABLE_METHOD_TYPES: Array[Symbol]
 
+    IGNORABLE_CONDITION_TYPES: Array[Symbol]
+
     @ignored_branches: Array[Symbol]?
     @ignored_methods: Array[Symbol]?
+    @ignored_conditions: Array[Symbol]?
 
     def ignore_branches: (*(:implicit_else | :eval_generated) types) -> Array[Symbol]
 
@@ -475,15 +478,23 @@ module SimpleCov
 
     def ignored_method?: (Symbol type) -> bool
 
+    def ignored_conditions: () -> Array[Symbol]
+
+    def ignored_condition?: (Symbol type) -> bool
+
     private
 
     def store_ignored_branches: (Array[Symbol] types) -> Array[Symbol]
 
     def store_ignored_methods: (Array[Symbol] types) -> Array[Symbol]
 
+    def store_ignored_conditions: (Array[Symbol] types) -> Array[Symbol]
+
     def raise_if_branch_type_unsupported: (Symbol type) -> void
 
     def raise_if_method_type_unsupported: (Symbol type) -> void
+
+    def raise_if_condition_type_unsupported: (Symbol type) -> void
   end
 end
 

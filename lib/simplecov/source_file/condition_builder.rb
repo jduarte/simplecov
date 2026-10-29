@@ -46,13 +46,21 @@ module SimpleCov
       end
 
       # The operator sits inside the expression, so a disabled region over any
-      # of the expression, the operator's line included, skips the arm.
+      # of the expression, the operator's line included, skips the arm. So
+      # does `ignore :memoized`, for the arm of `||=` that finds the value
+      # already there.
       def process_skipped(conditions)
         chunks = @source_file.skip_chunks_for(:condition)
+        memoized = SimpleCov.ignored_condition?(:memoized)
 
         conditions.each do |condition|
           condition.skipped! if chunks.any? { |chunk| condition.overlaps_with?(chunk) }
+          condition.skipped! if memoized && cached_path?(condition)
         end
+      end
+
+      def cached_path?(condition)
+        condition.operator.equal?(:"||=") && condition.type.equal?(:short_circuited)
       end
     end
   end

@@ -56,6 +56,30 @@ RSpec.describe SimpleCov::SourceFile::ConditionBuilder do
     expect(described_class.new(source_file).call).to be_empty
   end
 
+  context "with ignore :memoized" do
+    def condition_of(kind)
+      {[kind, 0, 2, 4, 2, 12] => {[:evaluated, 0, 2, 11, 2, 12] => 1, [:short_circuited, 1, 2, 7, 2, 10] => 0}}
+    end
+
+    def skipped(kind) = build(condition_of(kind)).to_h { |arm| [arm.type, arm.skipped?] }
+
+    before { allow(SimpleCov).to receive(:ignored_condition?).with(:memoized).and_return(true) }
+
+    it "skips only the arm of ||= that finds the value already cached" do
+      expect(skipped(:"||=")).to eq(evaluated: false, short_circuited: true)
+    end
+
+    it "leaves every other operator's short-circuit alone" do
+      expect(%i[|| && &&=].map { |kind| skipped(kind) }).to all(eq(evaluated: false, short_circuited: false))
+    end
+
+    it "leaves the cached path alone unless asked" do
+      allow(SimpleCov).to receive(:ignored_condition?).with(:memoized).and_return(false)
+
+      expect(skipped(:"||=")).to eq(evaluated: false, short_circuited: false)
+    end
+  end
+
   context "with directives" do
     it "skips the arms of an expression a disabled condition region overlaps" do
       source = ["x = 1", "y = a && # simplecov:disable condition", "  b", "z = 2"]

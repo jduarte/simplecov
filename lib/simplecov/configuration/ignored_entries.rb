@@ -4,6 +4,10 @@ module SimpleCov
   module Configuration
     IGNORABLE_BRANCH_TYPES = %i[implicit_else eval_generated].freeze
     IGNORABLE_METHOD_TYPES = %i[eval_generated].freeze
+    # `:memoized` is the short-circuit arm of `||=`, the path that finds a value
+    # already cached, which a suite exercising each memo once never takes. The
+    # arm that computes the value still counts.
+    IGNORABLE_CONDITION_TYPES = %i[memoized].freeze
 
     # Deprecated in favour of `coverage(:branch) { ignore :implicit_else }`,
     # which fixes the criterion by context the way the threshold verbs do. One
@@ -37,6 +41,14 @@ module SimpleCov
       ignored_methods.include?(type)
     end
 
+    def ignored_conditions
+      @ignored_conditions ||= []
+    end
+
+    def ignored_condition?(type)
+      ignored_conditions.include?(type)
+    end
+
     private
 
     # Variadic semantics: multiple calls union, duplicates are no-ops, unknown
@@ -53,6 +65,12 @@ module SimpleCov
       ignored_methods
     end
 
+    def store_ignored_conditions(types)
+      types.each { |type| raise_if_condition_type_unsupported(type) }
+      ignored_conditions.concat(types).uniq!
+      ignored_conditions
+    end
+
     def raise_if_branch_type_unsupported(type)
       return if IGNORABLE_BRANCH_TYPES.member?(type)
 
@@ -67,6 +85,14 @@ module SimpleCov
       raise ConfigurationError,
         "Unsupported method type #{type.inspect} for `ignore_methods`. " \
         "Supported values are #{IGNORABLE_METHOD_TYPES.inspect}"
+    end
+
+    def raise_if_condition_type_unsupported(type)
+      return if IGNORABLE_CONDITION_TYPES.member?(type)
+
+      raise ConfigurationError,
+        "Unsupported condition type #{type.inspect} for `coverage(:condition) { ignore }`. " \
+        "Supported values are #{IGNORABLE_CONDITION_TYPES.inspect}"
     end
   end
 end

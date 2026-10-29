@@ -2354,10 +2354,45 @@ RSpec.describe SimpleCov::Configuration do
   describe "the coverage block's ignore verb" do
     after { config.clear_coverage_criteria }
 
-    %i[ignored_branches ignored_methods].each do |setting|
+    %i[ignored_branches ignored_methods ignored_conditions].each do |setting|
       it "defaults #{setting} to empty" do
         expect(config.public_send(setting)).to eq []
       end
+    end
+
+    it "stores :memoized for coverage :condition" do
+      config.coverage(:condition) { ignore :memoized }
+
+      expect(config.ignored_condition?(:memoized)).to be true
+    end
+
+    it "answers false for a condition token never stored" do
+      expect(config.ignored_condition?(:memoized)).to be false
+    end
+
+    it "answers the condition tokens stored so far" do
+      stored = nil
+      config.coverage(:condition) { stored = ignore :memoized }
+
+      expect(stored).to eq [:memoized]
+    end
+
+    it "takes condition tokens as a one-liner keyword list" do
+      config.coverage :condition, ignore: %i[memoized]
+
+      expect(config.ignored_conditions).to eq [:memoized]
+    end
+
+    it "unions and deduplicates condition tokens across calls" do
+      2.times { config.coverage(:condition) { ignore :memoized } }
+
+      expect(config.ignored_conditions).to eq [:memoized]
+    end
+
+    it "raises on an unknown condition token, naming the supported ones" do
+      expect { config.coverage(:condition) { ignore :"||=" } }
+        .to raise_error(SimpleCov::ConfigurationError,
+          /Unsupported condition type :"\|\|=".*Supported values are \[:memoized\]/m)
     end
 
     %i[implicit_else eval_generated].each do |token|
@@ -4004,7 +4039,7 @@ RSpec.describe SimpleCov::Configuration do
     it "refuses to ignore anything for a criterion that has nothing to ignore" do
       expect { config.coverage(:line) { ignore :eval_generated } }
         .to raise_error(SimpleCov::ConfigurationError,
-          "`ignore` is supported for `coverage :branch` and `coverage :method`, not :line")
+          "`ignore` is supported for `coverage :branch`, `coverage :method`, and `coverage :condition`, not :line")
     end
   end
 
