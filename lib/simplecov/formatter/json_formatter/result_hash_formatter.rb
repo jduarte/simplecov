@@ -14,7 +14,7 @@ module SimpleCov
         # bump the minor segment, removals or shape changes the major. The versioned
         # file at schemas/coverage-vX.Y.schema.json is the canonical artifact
         # consumers should pin to.
-        SCHEMA_VERSION = "1.4"
+        SCHEMA_VERSION = "1.5"
         SCHEMA_URL = "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v#{SCHEMA_VERSION}.schema.json".freeze
         private_constant :SCHEMA_VERSION, :SCHEMA_URL
 
@@ -89,7 +89,8 @@ module SimpleCov
             {
               line_coverage: SimpleCov.line_coverage?,
               branch_coverage: SimpleCov.branch_coverage?,
-              method_coverage: SimpleCov.method_coverage?
+              method_coverage: SimpleCov.method_coverage?,
+              condition_coverage: SimpleCov.condition_coverage?
             }
           end
 
@@ -100,9 +101,11 @@ module SimpleCov
             line = statistics[:line]
             branch = statistics[:branch]
             method_stat = statistics[:method]
+            condition = statistics[:condition]
             result[:lines] = format_line_statistic(line) if line
             result[:branches] = format_single_statistic(branch) if branch
             result[:methods] = format_single_statistic(method_stat) if method_stat
+            result[:conditions] = format_single_statistic(condition) if condition
             result
           end
 

@@ -27,8 +27,18 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::SourceFileFormatter,
       covered_branches: [inline_branch], missed_branches: [block_branch],
       total_branches: [inline_branch, block_branch],
       methods: [covered_method, missed_method],
-      covered_methods: [covered_method], missed_methods: [missed_method]
+      covered_methods: [covered_method], missed_methods: [missed_method],
+      conditions: conditions, covered_conditions: [conditions.first], missed_conditions: [conditions[1]]
     )
+  end
+
+  # A `&&` with a hit and a missed arm, and a `||=` whose cached path is
+  # ignored.
+  def conditions
+    [
+      condition(:"&&", :evaluated, 3), condition(:"&&", :short_circuited, 0),
+      condition(:"||=", :short_circuited, 0).tap(&:skipped!)
+    ]
   end
 
   def filename = File.expand_path("/project/lib/a.rb")
@@ -39,6 +49,24 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::SourceFileFormatter,
 
   def block_branch
     SimpleCov::SourceFile::Branch.new(start_line: 5, end_line: 6, coverage: 0, inline: false, type: :else)
+  end
+
+  def condition(operator, type, coverage)
+    SimpleCov::SourceFile::Condition.new(
+      start_line: 3, end_line: 4, coverage: coverage, type: type, operator: operator, report_line: 3
+    )
+  end
+
+  def condition_section
+    {
+      conditions: [
+        {operator: :"&&", type: :evaluated, start_line: 3, end_line: 4, coverage: 3, report_line: 3},
+        {operator: :"&&", type: :short_circuited, start_line: 3, end_line: 4, coverage: 0, report_line: 3},
+        {operator: :"||=", type: :short_circuited, start_line: 3, end_line: 4, coverage: "ignored", report_line: 3}
+      ],
+      conditions_covered_percent: 50.0,
+      covered_conditions: 1, missed_conditions: 1, total_conditions: 2
+    }
   end
 
   def line_section
@@ -78,7 +106,9 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::SourceFileFormatter,
   end
 
   before do
-    allow(SimpleCov).to receive_messages(line_coverage?: false, branch_coverage?: false, method_coverage?: false)
+    allow(SimpleCov).to receive_messages(
+      line_coverage?: false, branch_coverage?: false, method_coverage?: false, condition_coverage?: false
+    )
   end
 
   it "carries the source with each line's trailing newline stripped" do
@@ -110,6 +140,13 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::SourceFileFormatter,
     allow(source_file).to receive(:covered_percent).with(:method).and_return(50.0)
 
     expect(described_class.call(source_file, include_source: false)).to eq(method_section)
+  end
+
+  it "carries the condition section and its totals, ignored arms marked" do
+    allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+    allow(source_file).to receive(:covered_percent).with(:condition).and_return(50.0)
+
+    expect(described_class.call(source_file, include_source: false)).to eq(condition_section)
   end
 
   it "carries every enabled criterion's section at once" do

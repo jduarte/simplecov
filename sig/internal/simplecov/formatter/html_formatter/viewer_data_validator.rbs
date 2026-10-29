@@ -4,6 +4,8 @@ module SimpleCov
       module ViewerDataValidator
         META_STRINGS: Array[String]
         COVERAGE_FLAGS: Hash[String, String]
+
+        OPTIONAL_COVERAGE_FLAGS: Hash[String, String]
         STAT_FIELDS: Array[String]
 
         def self.call: (Hash[String, untyped] data) -> Hash[String, untyped]

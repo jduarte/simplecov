@@ -9,7 +9,7 @@ describe "coverage.json schema" do
   let(:alias_doc) { JSON.parse(File.read(alias_path)) }
   let(:schemer) { JSONSchemer.schema(schema_doc) }
 
-  def schema_path = File.expand_path("../../schemas/coverage-v1.4.schema.json", __dir__)
+  def schema_path = File.expand_path("../../schemas/coverage-v1.5.schema.json", __dir__)
 
   def alias_path = File.expand_path("../../schemas/coverage.schema.json", __dir__)
 
@@ -149,6 +149,49 @@ describe "coverage.json schema" do
       allow(SimpleCov).to receive(:method_coverage?).and_return(true)
 
       expect_schema_valid(emit(method_result))
+    end
+
+    context "with condition coverage enabled" do
+      # A `&&` whose right operand never ran, and a `||=` whose cached path
+      # the configuration ignores.
+      let(:document) do
+        emit(SimpleCov::Result.new({source_fixture("json/sample.rb") => {
+          "lines" => [1, 0, nil],
+          "conditions" => {
+            [:"&&", 0, 1, 0, 1, 6] => {[:evaluated, 0, 1, 5, 1, 6] => 0, [:short_circuited, 1, 1, 2, 1, 4] => 2},
+            [:"||=", 1, 2, 0, 2, 9] => {[:evaluated, 2, 2, 8, 2, 9] => 1, [:short_circuited, 3, 2, 3, 2, 6] => 0}
+          }
+        }}))
+      end
+
+      before do
+        allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+        allow(SimpleCov).to receive(:ignored_condition?).with(:memoized).and_return(true)
+      end
+
+      it "validates" do
+        expect_schema_valid(document)
+      end
+
+      it "records every arm, the ignored one as ignored" do
+        expect(document.fetch("coverage").values.first.fetch("conditions").map { |arm| arm.fetch("coverage") })
+          .to eq([0, 2, 1, "ignored"])
+      end
+
+      it "totals the arms nothing ignored" do
+        expect(document.fetch("total").fetch("conditions")).to include("covered" => 2, "missed" => 1, "total" => 3)
+      end
+
+      it "records that the run measured conditions" do
+        expect(document.fetch("meta").fetch("condition_coverage")).to be(true)
+      end
+    end
+
+    it "validates a document written before condition coverage existed" do
+      document = JSON.parse(File.read(source_fixture("json/sample.json")))
+      document["meta"].delete("condition_coverage")
+
+      expect_schema_valid(document)
     end
 
     context "when line coverage is disabled" do

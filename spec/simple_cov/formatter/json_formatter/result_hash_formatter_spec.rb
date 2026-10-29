@@ -26,7 +26,7 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::ResultHashFormatter,
       root: SimpleCov.root,
       commit: commit,
       primary_coverage: "line",
-      line_coverage: true, branch_coverage: false, method_coverage: false
+      line_coverage: true, branch_coverage: false, method_coverage: false, condition_coverage: false
     }
   end
   let(:contextual_document) do
@@ -75,6 +75,28 @@ RSpec.describe SimpleCov::Formatter::JSONFormatter::ResultHashFormatter,
     expect(document.fetch(:meta)).to include(
       line_coverage: false, branch_coverage: true, method_coverage: true
     )
+  end
+
+  it "records that the run measured conditions" do
+    allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+
+    expect(document.fetch(:meta)).to include(condition_coverage: true)
+  end
+
+  context "with conditions measured" do
+    let(:coverage_data) do
+      {sample_path => {
+        "lines" => [nil, 1, 1, 0, nil],
+        "conditions" => {[:"&&", 0, 2, 0, 2, 6] => {[:evaluated, 0, 2, 5, 2, 6] => 0, [:short_circuited, 1, 2, 2, 2, 4] => 2}}
+      }}
+    end
+
+    before { allow(SimpleCov).to receive(:condition_coverage?).and_return(true) }
+
+    it "totals them" do
+      expect(document.fetch(:total).fetch(:conditions))
+        .to eq(covered: 1, missed: 1, total: 2, percent: 50.0, strength: 1.0)
+    end
   end
 
   it "records the commit with the whitespace around it trimmed" do
