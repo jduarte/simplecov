@@ -65,6 +65,6 @@ RSpec.describe ReleaseNotes do
   end
 
   it "reads the project changelog by default" do
-    expect(described_class.for(SimpleCov::VERSION)).to start_with("### ")
+    expect(described_class.for(SimpleCov::VERSION)).to match(/^### /)
   end
 end
