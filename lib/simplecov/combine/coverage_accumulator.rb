@@ -26,7 +26,8 @@ module SimpleCov
       # loaded with the counters cleared, and calling a method whose body
       # shares the `def` line then records a method hit and no line hit.
       def self.file_executed?(coverage)
-        executed?(coverage["lines"]) || hit?(coverage["methods"]) || arm_hit?(coverage["branches"])
+        executed?(coverage["lines"]) || hit?(coverage["methods"]) || arm_hit?(coverage["branches"]) ||
+          arm_hit?(coverage["conditions"])
       end
 
       def self.hit?(counts)
@@ -56,6 +57,7 @@ module SimpleCov
         # files.
         @branch_coverage = SimpleCov.branch_coverage?
         @method_coverage = SimpleCov.method_coverage?
+        @condition_coverage = SimpleCov.condition_coverage?
       end
 
       def absorb(coverage)
@@ -87,7 +89,10 @@ module SimpleCov
         case existing
         when nil then file_coverage
         when MergedFile then existing.absorb(file_coverage)
-        else MergedFile.new(existing, branches: @branch_coverage, methods: @method_coverage).absorb(file_coverage)
+        else
+          MergedFile.new(
+            existing, branches: @branch_coverage, methods: @method_coverage, conditions: @condition_coverage
+          ).absorb(file_coverage)
         end
       end
 
@@ -101,15 +106,22 @@ module SimpleCov
       # measured that criterion, an empty one means it was measured and the
       # file has none.
       #
+      # Condition tables share the branch tables' shape and identity rule (a
+      # condition and its arms, matched on source span), so the branches
+      # combiner merges them too.
+      #
       class MergedFile
-        def initialize(coverage, branches:, methods:)
+        def initialize(coverage, branches:, methods:, conditions:)
           @branch_coverage = branches
           @method_coverage = methods
+          @condition_coverage = conditions
           @executed = CoverageAccumulator.file_executed?(coverage)
           @lines = LinesCombiner.merge_into(nil, coverage["lines"])
           branches_table = coverage["branches"]
           @branches = BranchesCombiner.absorb(new_table, branches_table) if branches || branches_table
           @methods = MethodsCombiner.absorb(nil, coverage["methods"])
+          conditions_table = coverage["conditions"]
+          @conditions = BranchesCombiner.absorb(new_table, conditions_table) if conditions || conditions_table
         end
 
         def absorb(coverage)
@@ -122,6 +134,7 @@ module SimpleCov
           merged = {"lines" => @lines} #: Hash[String, untyped]
           merged["branches"] = BranchesCombiner.materialize(@branches) if @branches
           merged["methods"] = MethodsCombiner.materialize(@methods) if @methods
+          merged["conditions"] = BranchesCombiner.materialize(@conditions) if @conditions
           merged
         end
 
@@ -157,6 +170,8 @@ module SimpleCov
           branches_table = coverage["branches"]
           @branches = BranchesCombiner.absorb(@branches || new_table, branches_table) if branches_table
           @methods = MethodsCombiner.absorb(@methods, coverage["methods"])
+          conditions_table = coverage["conditions"]
+          @conditions = BranchesCombiner.absorb(@conditions || new_table, conditions_table) if conditions_table
         end
 
         def drop_incoming_tuples(coverage)
@@ -166,6 +181,7 @@ module SimpleCov
         def replace_tuples(coverage)
           @branches = authoritative_table(BranchesCombiner, coverage["branches"], @branch_coverage)
           @methods = authoritative_table(MethodsCombiner, coverage["methods"], @method_coverage && !@methods.nil?)
+          @conditions = authoritative_table(BranchesCombiner, coverage["conditions"], @condition_coverage)
         end
 
         def authoritative_table(combiner, table, keep_empty)

@@ -789,11 +789,27 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
 
       it "takes the caller's word over the criteria" do
         allow(described_class).to receive_messages(branch_coverage?: true, method_coverage?: true,
-          line_coverage?: true)
+          line_coverage?: true, condition_coverage?: true)
 
-        inject(synthesize: false, lines: false)
+        inject(synthesize: false, lines: false, conditions: false)
         expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
-          .with(anything, anything, {synthesize: false, lines: false})
+          .with(anything, anything, {synthesize: false, lines: false, conditions: false})
+      end
+
+      it "synthesizes conditions when condition coverage is measured" do
+        allow(described_class).to receive(:condition_coverage?).and_return(true)
+
+        inject
+        expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
+          .with(anything, anything, hash_including(conditions: true))
+      end
+
+      it "synthesizes no conditions when condition coverage isn't measured" do
+        allow(described_class).to receive(:condition_coverage?).and_return(false)
+
+        inject
+        expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
+          .with(anything, anything, hash_including(conditions: false))
       end
 
       it "simulates lines when line coverage is measured" do

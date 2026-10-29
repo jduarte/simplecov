@@ -99,7 +99,7 @@ module SimpleCov
     # @api private -- the seam `SimpleCov::ResultMerger` injects through. Public
     # only because the merge runs in another object, on behalf of processes
     # whose configuration it may not share, so it supplies the paths itself.
-    def inject_unloaded_files(result, candidate_paths, synthesize: nil, lines: nil)
+    def inject_unloaded_files(result, candidate_paths, synthesize: nil, lines: nil, conditions: nil)
       return [result, Set.new] if candidate_paths.empty?
 
       # Synthesizing branch and method tuples means parsing every tracked file
@@ -110,7 +110,8 @@ module SimpleCov
       UnloadedFileInjector.call(
         result, candidate_paths,
         synthesize: synthesize.nil? ? branch_coverage? || method_coverage? : synthesize,
-        lines: lines.nil? ? line_coverage? : lines
+        lines: lines.nil? ? line_coverage? : lines,
+        conditions: conditions.nil? ? condition_coverage? : conditions
       )
     end
 

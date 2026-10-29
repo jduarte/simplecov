@@ -6,6 +6,6 @@ module SimpleCov
 
     NO_COVERAGE_YET: Hash[String, Array[untyped]]
 
-    def self?.call: (Hash[String, untyped] coverage, Array[String] paths, synthesize: bool, lines: bool) -> [Hash[String, untyped], Set[String]]
+    def self?.call: (Hash[String, untyped] coverage, Array[String] paths, synthesize: bool, lines: bool, ?conditions: bool) -> [Hash[String, untyped], Set[String]]
   end
 end

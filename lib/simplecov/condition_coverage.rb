@@ -33,8 +33,38 @@ module SimpleCov
     def supported?
       return @supported if instance_variable_defined?(:@supported)
 
-      @supported = RUBY_ENGINE.eql?("ruby") && load_rewriter && compile_keeps_coverage?
+      @supported = RUBY_ENGINE.eql?("ruby") && rewriter_loaded? && compile_keeps_coverage?
     end
+
+    # Memoized for the same reason as `supported?`. Merging needs only this:
+    # it reads conditions, and names the ones nothing loaded.
+    def rewriter_loaded?
+      return @rewriter_loaded if instance_variable_defined?(:@rewriter_loaded)
+
+      @rewriter_loaded = load_rewriter
+    end
+
+    # Every condition in a file nothing loaded, at zero hits. Found by the
+    # same collector the rewrite uses, so they merge with a loaded file's by
+    # identity. Empty where Prism can't load or parse the file, the way
+    # `SimulateCoverage` leaves branches it can't extract.
+    def unmeasured(source)
+      return NOTHING_FOUND unless rewriter_loaded?
+
+      result = Prism.parse(source)
+      return NOTHING_FOUND if result.failure?
+
+      collector = Collector.new
+      result.value.accept(collector)
+      collector.sites.to_h do |site|
+        condition = site.condition
+        [condition.tuple, {condition.evaluated_tuple => 0, condition.short_circuited_tuple => 0}]
+      end
+    end
+
+    nothing_found = {} #: Hash[Condition::tuple, Hash[Condition::tuple, Integer]]
+    NOTHING_FOUND = nothing_found.freeze
+    private_constant :NOTHING_FOUND
 
     # Ruby 3.4.0 to 3.4.9 and 4.0.0 to 4.0.3 never register code compiled by
     # `RubyVM::InstructionSequence.compile` with Coverage when Prism compiles

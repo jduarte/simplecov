@@ -8,6 +8,12 @@ module SimpleCov
 
     @supported: bool
 
+    @rewriter_loaded: bool
+
+    self.@rewriter_loaded: bool
+
+    NOTHING_FOUND: Hash[Condition::tuple, Hash[Condition::tuple, Integer]]
+
     @bootsnap_watch: TracePoint?
 
     self.@supported: bool
@@ -19,6 +25,10 @@ module SimpleCov
     def self?.supported?: () -> bool
 
     def self?.compile_keeps_coverage?: () -> bool
+
+    def self?.rewriter_loaded?: () -> bool
+
+    def self?.unmeasured: (String source) -> Hash[Condition::tuple, Hash[Condition::tuple, Integer]]
 
     def self?.install: (?Module target) -> void
 

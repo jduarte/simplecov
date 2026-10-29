@@ -15,6 +15,7 @@
 
       @branch_coverage: bool
       @method_coverage: bool
+      @condition_coverage: bool
 
       def initialize: () -> void
 
@@ -27,12 +28,14 @@
       class MergedFile
         @branch_coverage: bool
         @method_coverage: bool
+        @condition_coverage: bool
+        @conditions: Hash[untyped, untyped]?
         @executed: bool
         @lines: Array[Integer?]?
         @branches: Hash[untyped, untyped]?
         @methods: Hash[untyped, untyped]?
 
-        def initialize: (untyped coverage, branches: bool, methods: bool) -> void
+        def initialize: (untyped coverage, branches: bool, methods: bool, conditions: bool) -> void
 
         private def new_table: () -> Hash[untyped, untyped]
 

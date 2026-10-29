@@ -18,7 +18,9 @@ RSpec.describe SimpleCov::ConditionCoverage do
     end
 
     def forget_support
-      described_class.remove_instance_variable(:@supported) if described_class.instance_variable_defined?(:@supported)
+      %i[@supported @rewriter_loaded].each do |memo|
+        described_class.remove_instance_variable(memo) if described_class.instance_variable_defined?(memo)
+      end
     end
 
     it "answers true on a CRuby whose compiled code keeps its coverage" do
@@ -27,6 +29,22 @@ RSpec.describe SimpleCov::ConditionCoverage do
       allow(described_class).to receive(:require_relative).and_return(true)
 
       expect(described_class.supported?).to be(true)
+    end
+
+    it "answers the same however often it's asked" do
+      stub_const("RUBY_ENGINE", "ruby")
+      stub_const("RUBY_VERSION", "3.4.10")
+      allow(described_class).to receive(:require_relative).and_return(true)
+
+      expect(Array.new(2) { described_class.supported? }).to eq([true, true])
+    end
+
+    it "works its answer out once" do
+      stub_const("RUBY_ENGINE", "ruby")
+      allow(described_class).to receive_messages(rewriter_loaded?: true, compile_keeps_coverage?: true)
+      2.times { described_class.supported? }
+
+      expect(described_class).to have_received(:compile_keeps_coverage?).once
     end
 
     it "answers false on a CRuby whose compiled code loses its coverage" do
@@ -361,6 +379,49 @@ RSpec.describe SimpleCov::ConditionCoverage do
       SimpleCov.cover { |source_file| source_file.filename.end_with?("never.rb") }
 
       expect(described_class.in_scope?(fixture("sample.rb"))).to be(true)
+    end
+  end
+
+  describe ".unmeasured", mutant_expression: %w[
+    SimpleCov::ConditionCoverage#unmeasured SimpleCov::ConditionCoverage#rewriter_loaded?
+  ] do
+    # Settled the way a run settles it, then put back however it was found:
+    # absent, or answered.
+    around do |example|
+      memoized = described_class.instance_variable_defined?(:@rewriter_loaded)
+      loaded = described_class.instance_variable_get(:@rewriter_loaded)
+      described_class.rewriter_loaded?
+      example.run
+    ensure
+      if memoized
+        described_class.instance_variable_set(:@rewriter_loaded, loaded)
+      elsif described_class.instance_variable_defined?(:@rewriter_loaded)
+        described_class.remove_instance_variable(:@rewriter_loaded)
+      end
+    end
+
+    it "names every condition at zero hits, by the tuples a measured run would" do
+      expect(described_class.unmeasured("x = a && b\n")).to eq(
+        [:"&&", 0, 1, 4, 1, 10] => {[:evaluated, 0, 1, 9, 1, 10] => 0, [:short_circuited, 1, 1, 6, 1, 8] => 0}
+      )
+    end
+
+    it "names nothing for source Prism can't parse, even where it recovers a condition" do
+      expect(described_class.unmeasured("x = a && b\ndef f(\n")).to eq({})
+    end
+
+    it "names nothing where the rewriter can't load" do
+      described_class.instance_variable_set(:@rewriter_loaded, false)
+
+      expect(described_class.unmeasured("x = a && b\n")).to eq({})
+    end
+
+    it "loads the rewriter once, however often it's asked" do
+      described_class.remove_instance_variable(:@rewriter_loaded)
+      allow(described_class).to receive(:require_relative).and_return(true)
+      2.times { described_class.rewriter_loaded? }
+
+      expect(described_class).to have_received(:require_relative).once
     end
   end
 

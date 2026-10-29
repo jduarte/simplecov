@@ -1,6 +1,6 @@
 module SimpleCov
   module SimulateCoverage
-    def self?.call: (untyped absolute_path, ?synthesize: bool, ?lines: bool) -> Hash[String, untyped]
+    def self?.call: (untyped absolute_path, ?synthesize: bool, ?lines: bool, ?conditions: bool) -> Hash[String, untyped]
 
     def self?.synthesized_tuples: (untyped source_lines, bool synthesize) -> { "branches" => untyped, "methods" => untyped }
 

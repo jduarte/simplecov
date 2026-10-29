@@ -30,14 +30,19 @@ module SimpleCov
     # the tuples and the Prism parse is about half the cost of simulating a
     # file (#1250).
     #
+    # Pass `conditions: true` to add a `"conditions"` table, every condition
+    # the file holds at zero hits, which Ruby's Coverage has no notion of
+    # (see `ConditionCoverage`).
+    #
     # Pass `lines: false` to omit the `"lines"` key entirely, mirroring what
     # `Coverage.result` reports for a file loaded under a branch-only or
     # method-only run. Emitting zeroed lines there would make a simulated file
     # indistinguishable from one a sibling process actually loaded.
     #
-    def call(absolute_path, synthesize: true, lines: true)
+    def call(absolute_path, synthesize: true, lines: true, conditions: false)
       source_lines = read_lines(absolute_path)
       simulated = synthesized_tuples(source_lines, synthesize)
+      simulated["conditions"] = ConditionCoverage.unmeasured(source_lines.join) if conditions
       return simulated unless lines
 
       classified = coverage_stub(absolute_path, source_lines) ||

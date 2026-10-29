@@ -57,5 +57,29 @@ RSpec.describe "Measuring conditions as files load", mutant: false do
     it "still measures where a bootsnap-like loader is installed after SimpleCov starts" do
       expect(run_fixture("bootsnap_after").fetch("conditions")).to eq(measured.fetch("conditions"))
     end
+
+    context "when two runs merge" do
+      let(:merged) do
+        Dir.chdir(File.join(__dir__, "fixtures", "condition_coverage_loading")) do
+          FileUtils.rm_rf("tmp")
+          %w[one two].map do |part|
+            stdout, stderr, status = Open3.capture3(child_env, RbConfig.ruby, "merging.rb", part)
+            raise "fixture failed: #{stderr}" unless status.success?
+
+            JSON.parse(stdout.lines.last)
+          end.last
+        end
+      end
+
+      it "adds up the arms each run took" do
+        expect(merged.fetch("checks.rb").first(4)).to eq([
+          %w[|| evaluated 1], %w[|| short_circuited 1], %w[&& evaluated 1], %w[&& short_circuited 1]
+        ])
+      end
+
+      it "counts every condition of a covered file neither run loaded, at zero" do
+        expect(merged.fetch("never_loaded.rb")).to eq([%w[|| evaluated 0], %w[|| short_circuited 0]])
+      end
+    end
   end
 end

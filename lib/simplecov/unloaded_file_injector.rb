@@ -45,14 +45,14 @@ module SimpleCov
     # Paths already present are left alone, whoever put them there, which is
     # what lets this run over resultsets a previous SimpleCov already injected
     # into without double-counting or overwriting real data.
-    def call(coverage, paths, synthesize:, lines:)
+    def call(coverage, paths, synthesize:, lines:, conditions: false)
       injected = Set.new
       augmented = coverage.dup
 
       paths.each do |path|
         next if augmented.key?(path)
 
-        augmented[path] = SimulateCoverage.call(path, synthesize: synthesize, lines: lines)
+        augmented[path] = SimulateCoverage.call(path, synthesize: synthesize, lines: lines, conditions: conditions)
         injected << path
       end
 
