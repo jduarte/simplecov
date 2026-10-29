@@ -18,7 +18,7 @@ module SimpleCov
 
       def self?.warn_stale: (untyped path, untyped payload, ::Array[::Integer] changed, untyped stderr) -> void
 
-      def self?.build_row: (untyped path, untyped payload, untyped changed) -> { file: untyped, line: untyped, branch: untyped, method: untyped }
+      def self?.build_row: (untyped path, untyped payload, untyped changed) -> { file: untyped, line: untyped, branch: untyped, method: untyped, condition: untyped }
 
       def self?.line_stats: (untyped hits, untyped changed) -> { covered: ::Integer, relevant: ::Integer, missing: ::Array[::Integer] }
 

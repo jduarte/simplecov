@@ -67,7 +67,7 @@ module SimpleCov
         def totals(total)
           return {} unless total.instance_of?(Hash)
 
-          rows = {"line" => "lines", "branch" => "branches", "method" => "methods"}.filter_map do |name, key|
+          rows = {"line" => "lines", "branch" => "branches", "method" => "methods", "condition" => "conditions"}.filter_map do |name, key|
             percent = total.dig(key, "percent")
             [name, percent] if percent.is_a?(Numeric)
           end

@@ -10,7 +10,7 @@ module SimpleCov
       extend CommandHelpers
 
       TOTAL_LABEL = "All Files"
-      SECTIONS = [%w[Line lines], %w[Branch branches], %w[Method methods]].freeze #: Array[[String, String]]
+      SECTIONS = [%w[Line lines], %w[Branch branches], %w[Method methods], %w[Condition conditions]].freeze #: Array[[String, String]]
 
       extend self
 

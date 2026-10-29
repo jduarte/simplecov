@@ -10,6 +10,7 @@ module SimpleCov
           case criterion
           when :line then payload["lines"].instance_of?(Array) ? Show::Annotator.missed_lines(payload) : []
           when :branch then collect(payload["branches"])
+          when :condition then collect(payload["conditions"])
           else collect(payload["methods"])
           end
         end

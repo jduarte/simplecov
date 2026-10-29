@@ -19,7 +19,7 @@ module SimpleCov
 
       def self?.compute_rows: (untyped current, untyped baseline, untyped threshold) -> untyped
 
-      def self?.compute_row: (untyped fname, untyped current_payload, untyped baseline_payload, untyped threshold) -> (nil | { file: untyped, status: untyped, line_delta: untyped, branch_delta: untyped, method_delta: untyped })
+      def self?.compute_row: (untyped fname, untyped current_payload, untyped baseline_payload, untyped threshold) -> (nil | { file: untyped, status: untyped, line_delta: untyped, branch_delta: untyped, method_delta: untyped, condition_delta: untyped })
 
       def self?.status_for: (untyped current_payload, untyped baseline_payload) -> ("added" | "removed" | "changed")
 

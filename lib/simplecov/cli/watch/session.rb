@@ -13,7 +13,7 @@ module SimpleCov
         # session instead of eroding it after the default ten minutes.
         MERGE_WINDOW = "86400"
 
-        TOTALS_KEYS = {"line" => "lines", "branch" => "branches", "method" => "methods"}.freeze
+        TOTALS_KEYS = {"line" => "lines", "branch" => "branches", "method" => "methods", "condition" => "conditions"}.freeze
 
         # `global` holds the `--global` patterns and the `global_files` ones
         # apart, so a change matching either runs the full command.

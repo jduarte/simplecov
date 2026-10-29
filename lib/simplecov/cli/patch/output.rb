@@ -7,9 +7,11 @@ module SimpleCov
   module CLI
     module Patch
       module Output
-        OPTIONAL_CRITERIA = %i[branch method].freeze
+        # A row need not carry every optional criterion: one it leaves out reads
+        # as unmeasured, the way a nil one does.
+        OPTIONAL_CRITERIA = %i[branch method condition].freeze
 
-        CRITERIA = %i[line branch method].freeze
+        CRITERIA = %i[line branch method condition].freeze
 
         extend self
 
@@ -19,7 +21,7 @@ module SimpleCov
         def annotate(stdout, rows, kind)
           diagnostics = rows.flat_map do |row|
             CRITERIA.flat_map do |criterion|
-              stats = row.fetch(criterion)
+              stats = row[criterion]
               stats ? Annotations.diagnostics(row.fetch(:file), stats.fetch(:missing), criterion) : []
             end
           end
@@ -50,10 +52,14 @@ module SimpleCov
 
         def criterion_cells(row, color)
           cells = [criterion_cell("lines", row.fetch(:line), color)]
-          cells << criterion_cell("branches", row.fetch(:branch), color) if measured?(row.fetch(:branch))
-          cells << criterion_cell("methods", row.fetch(:method), color) if measured?(row.fetch(:method))
+          OPTIONAL_CRITERIA.each do |criterion|
+            stats = row[criterion]
+            cells << criterion_cell(CELL_LABELS.fetch(criterion), stats, color) if measured?(stats)
+          end
           cells
         end
+
+        CELL_LABELS = {branch: "branches", method: "methods", condition: "conditions"}.freeze
 
         # A "lines" cell always, "branches" and "methods" cells only when the
         # touched lines actually carried one: a hollow 0/0 cell is noise.
@@ -67,14 +73,14 @@ module SimpleCov
           parts = [] #: Array[String]
           parts << "missing #{ranges(row.fetch(:line).fetch(:missing))}" if row.fetch(:line).fetch(:missing).any?
           OPTIONAL_CRITERIA.each do |criterion|
-            stats = row.fetch(criterion)
+            stats = row[criterion]
             parts << "#{criterion} #{ranges(stats.fetch(:missing))}" if measured?(stats) && stats.fetch(:missing).any?
           end
           parts.join("  ")
         end
 
         def format_total(rows, color)
-          totals = {line: sum_stats(rows, :line), branch: sum_stats(rows, :branch), method: sum_stats(rows, :method)}
+          totals = CRITERIA.to_h { |criterion| [criterion, sum_stats(rows, criterion)] }
           "  Patch coverage: #{criterion_cells(totals, color).join(", ")}"
         end
 
@@ -82,7 +88,7 @@ module SimpleCov
           rows.map do |row|
             data = {file: row.fetch(:file), line: row.fetch(:line).merge(percent: pct(row.fetch(:line)))}
             OPTIONAL_CRITERIA.each do |criterion|
-              stats = row.fetch(criterion)
+              stats = row[criterion]
               data[criterion] = stats.merge(percent: pct(stats)) if measured?(stats)
             end
             data
@@ -115,7 +121,7 @@ module SimpleCov
         end
 
         def sum_stats(rows, criterion)
-          stats = rows.filter_map { |row| row.fetch(criterion) }
+          stats = rows.filter_map { |row| row[criterion] }
           {covered: stats.sum { |stat| stat.fetch(:covered) }, relevant: stats.sum { |stat| stat.fetch(:relevant) }}
         end
 
@@ -131,7 +137,7 @@ module SimpleCov
         def gate(rows, minimum)
           return 0 unless minimum
 
-          below = %i[line branch method].any? { |criterion| short?(sum_stats(rows, criterion), minimum) }
+          below = CRITERIA.any? { |criterion| short?(sum_stats(rows, criterion), minimum) }
           below ? 1 : 0
         end
 

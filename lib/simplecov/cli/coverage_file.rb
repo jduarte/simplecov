@@ -15,7 +15,9 @@ module SimpleCov
         branch: {label: "Branch", percent: "branches_covered_percent",
                  covered: "covered_branches", missed: "missed_branches", total: "total_branches"},
         method: {label: "Method", percent: "methods_covered_percent",
-                 covered: "covered_methods", missed: "missed_methods", total: "total_methods"}
+                 covered: "covered_methods", missed: "missed_methods", total: "total_methods"},
+        condition: {label: "Condition", percent: "conditions_covered_percent",
+                    covered: "covered_conditions", missed: "missed_conditions", total: "total_conditions"}
       }.freeze
 
       extend self

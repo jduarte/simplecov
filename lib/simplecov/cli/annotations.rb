@@ -16,13 +16,15 @@ module SimpleCov
       MESSAGES = {
         line: "Not covered by tests",
         branch: "Branch not covered by tests",
-        method: "Method not covered by tests"
+        method: "Method not covered by tests",
+        condition: "Condition not fully covered by tests"
       }.freeze
 
       DESCRIPTIONS = {
         line: "Lines the tests never executed",
         branch: "Branches the tests never took",
-        method: "Methods the tests never called"
+        method: "Methods the tests never called",
+        condition: "Conditions whose right operand the tests never evaluated, or never skipped"
       }.freeze
 
       SOURCE = {"name" => "simplecov", "url" => "https://github.com/simplecov-ruby/simplecov"}.freeze

@@ -12,14 +12,14 @@ module SimpleCov
 
       extend self
 
-      TOTAL_KEYS = {line: "lines", branch: "branches", method: "methods"}.freeze
+      TOTAL_KEYS = {line: "lines", branch: "branches", method: "methods", condition: "conditions"}.freeze
 
       def run(args, stdout:, stderr:)
         opts = parse(args)
         key = TOTAL_KEYS[opts.fetch(:criterion)]
         unless key
           return error(stderr,
-            "unknown --criterion #{opts.fetch(:criterion).inspect} (expected line, branch, or method)")
+            "unknown --criterion #{opts.fetch(:criterion).inspect} (expected line, branch, method, or condition)")
         end
 
         percent = percent_for(opts, key, stderr)

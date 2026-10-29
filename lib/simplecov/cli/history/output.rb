@@ -8,7 +8,7 @@ module SimpleCov
       module Output
         BARS = %w[▁ ▂ ▃ ▄ ▅ ▆ ▇ █].freeze
 
-        CRITERIA_ORDER = %w[line branch method].freeze
+        CRITERIA_ORDER = %w[line branch method condition].freeze
 
         extend self
 

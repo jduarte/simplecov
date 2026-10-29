@@ -693,6 +693,10 @@ RSpec.describe SimpleCov::CLI do
         expect(facts.totals(total)).to eq("line" => 92.5, "branch" => 88.0, "method" => 75.0)
       end
 
+      it "names conditions too" do
+        expect(facts.totals("conditions" => {"percent" => 50.0})).to eq("condition" => 50.0)
+      end
+
       it "drops a criterion whose percent is not a number" do
         expect(facts.totals("lines" => {"percent" => "92.5"})).to eq({})
       end
@@ -1037,7 +1041,7 @@ RSpec.describe SimpleCov::CLI do
         run_badge("--criterion", "files")
 
         expect(stderr.string)
-          .to eq("simplecov badge: unknown --criterion :files (expected line, branch, or method)\n")
+          .to eq("simplecov badge: unknown --criterion :files (expected line, branch, method, or condition)\n")
       end
     end
 
@@ -3931,6 +3935,12 @@ RSpec.describe SimpleCov::CLI do
         expect(annotator.markers_for("lines" => [1])).to be_empty
       end
 
+      it "labels a condition arm the tests missed under its operator's line" do
+        conditions = [{"report_line" => 2, "coverage" => 0}, {"report_line" => 2, "coverage" => 1}]
+
+        expect(annotator.markers_for("lines" => [1, 1], "conditions" => conditions)).to eq(2 => ["condition missed"])
+      end
+
       it "answers an empty label list for a line nothing was missed on" do
         expect(annotator.markers_for("lines" => [1])[1]).to eq([])
       end
@@ -4113,7 +4123,10 @@ RSpec.describe SimpleCov::CLI do
                                       {"report_line" => 4, "coverage" => 3}],
                                     "total_methods" => 2, "covered_methods" => 1, "methods_covered_percent" => 50.0,
                                     "methods" => [{"start_line" => 9, "coverage" => 0},
-                                      {"start_line" => 1, "coverage" => 2}]
+                                      {"start_line" => 1, "coverage" => 2}],
+                                    "total_conditions" => 2, "covered_conditions" => 1, "conditions_covered_percent" => 50.0,
+                                    "conditions" => [{"report_line" => 3, "coverage" => 0},
+                                      {"report_line" => 3, "coverage" => 4}]
                                   },
                                   "/abs/lib/stats_only.rb" => {
                                     "total_lines" => 2, "covered_lines" => 1, "lines_covered_percent" => 50.0
@@ -4142,6 +4155,16 @@ RSpec.describe SimpleCov::CLI do
         run("uncovered", "--input", json_path, "--missing", "--criterion", "branch")
 
         expect(stdout.string).to include("/abs/lib/b.rb  missing 2")
+      end
+
+      it "finds no condition misses in a file the report carries no conditions for" do
+        expect(SimpleCov::CLI::Uncovered::Misses.missed_for({"lines" => [0]}, :condition)).to eq([])
+      end
+
+      it "reports the lines of the operators whose arms the tests missed" do
+        run("uncovered", "--input", json_path, "--missing", "--criterion", "condition")
+
+        expect(stdout.string).to include("/abs/lib/b.rb  missing 3")
       end
 
       it "reports the lines missed methods start on" do
@@ -4419,7 +4442,7 @@ RSpec.describe SimpleCov::CLI do
         run("uncovered", "--input", json_path, "--criterion", "nope")
 
         expect(stderr.string)
-          .to eq("simplecov uncovered: unknown --criterion :nope (expected line, branch, or method)\n")
+          .to eq("simplecov uncovered: unknown --criterion :nope (expected line, branch, method, or condition)\n")
       end
     end
 
@@ -5087,6 +5110,39 @@ RSpec.describe SimpleCov::CLI do
       exited!(1, run("diff", "--input", current, "--fail-on-drop", baseline))
 
       expect(stdout.string).to include("lib/a.rb").and match(/-\s*15\.00%\s+methods/)
+    end
+
+    def conditioned(percent)
+      {"covered_lines" => 80, "lines_covered_percent" => 80.0,
+       "total_conditions" => 4, "covered_conditions" => (percent / 25).to_i, "conditions_covered_percent" => percent}
+    end
+
+    it "fails on a condition coverage drop alone when --fail-on-drop is set" do
+      write_coverage(baseline, "lib/a.rb" => conditioned(100.0))
+      write_coverage(current, "lib/a.rb" => conditioned(50.0))
+
+      exited!(1, run("diff", "--input", current, "--fail-on-drop", baseline))
+
+      expect(stdout.string).to include("lib/a.rb").and match(/-\s*50\.00%\s+conditions/)
+    end
+
+    it "colours a condition delta" do
+      allow(SimpleCov::Color).to receive(:enabled?).and_return(true)
+      write_coverage(baseline, "lib/a.rb" => conditioned(50.0))
+      write_coverage(current, "lib/a.rb" => conditioned(75.0))
+
+      run!("diff", "--input", current, baseline)
+
+      expect(stdout.string).to include("\e[32m+ 25.00% conditions\e[0m")
+    end
+
+    it "reports a condition rise beside the lines that held still" do
+      write_coverage(baseline, "lib/a.rb" => conditioned(50.0))
+      write_coverage(current, "lib/a.rb" => conditioned(75.0))
+
+      run!("diff", "--input", current, baseline)
+
+      expect(stdout.string.strip).to eq("0.00% lines  + 25.00% conditions  lib/a.rb")
     end
 
     it "leaves a criterion out when its totals are zero, however its percent reads" do
@@ -7109,6 +7165,12 @@ RSpec.describe SimpleCov::CLI do
       expect(renderer.criterion_cells(row, true).last).to include("\e[31m")
     end
 
+    it "colours a condition cell too" do
+      row = {file: "f", line: {covered: 1, relevant: 1, missing: []}, condition: {covered: 0, relevant: 2, missing: [3]}}
+
+      expect(renderer.criterion_cells(row, true).last).to include("\e[31m")
+    end
+
     it "asks about the stream it is writing to" do
       allow(described_class).to receive(:color_enabled?).and_return(false)
 
@@ -7207,6 +7269,18 @@ RSpec.describe SimpleCov::CLI do
       it "prints a branch and a method cell when the change touched both" do
         expect(renderer.criterion_cells(every_cell, false))
           .to eq([" 50.00% (1/2) lines", " 25.00% (1/4) branches", " 75.00% (3/4) methods"])
+      end
+
+      it "prints a condition cell when the change touched a condition" do
+        row = {file: "f", line: {covered: 1, relevant: 1, missing: []}, condition: {covered: 1, relevant: 2, missing: [1]}}
+
+        expect(renderer.criterion_cells(row, false)).to eq(["100.00% (1/1) lines", " 50.00% (1/2) conditions"])
+      end
+
+      it "notes the lines of the conditions it missed" do
+        row = {file: "f", line: {covered: 1, relevant: 1, missing: []}, condition: {covered: 1, relevant: 2, missing: [1]}}
+
+        expect(renderer.missing_note(row)).to eq("condition 1")
       end
 
       it "prints neither when the change touched neither" do

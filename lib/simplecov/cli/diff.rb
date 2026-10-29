@@ -80,7 +80,8 @@ module SimpleCov
         return nil unless deltas.values.any? { |delta| delta.abs > EPSILON && delta.abs >= floor }
 
         {file: fname, status: status_for(current_payload, baseline_payload),
-         line_delta: deltas.fetch(:line), branch_delta: deltas.fetch(:branch), method_delta: deltas.fetch(:method)}
+         line_delta: deltas.fetch(:line), branch_delta: deltas.fetch(:branch), method_delta: deltas.fetch(:method),
+         condition_delta: deltas.fetch(:condition)}
       end
 
       def compute_deltas(current_payload, baseline_payload)
@@ -108,7 +109,7 @@ module SimpleCov
       # in one criterion cannot fail the run over float noise in another.
       def coverage_drop?(rows)
         rows.reject { |row| row.fetch(:status).eql?("removed") }
-          .any? { |row| row.fetch_values(:line_delta, :branch_delta, :method_delta).min < -EPSILON }
+          .any? { |row| row.fetch_values(:line_delta, :branch_delta, :method_delta, :condition_delta).min < -EPSILON }
       end
     end
   end
