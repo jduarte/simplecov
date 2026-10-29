@@ -116,6 +116,7 @@ argument, and misses can be capped as absolute counts rather than ratios:
 ```ruby
 SimpleCov.start do
   enable_coverage :branch            # track branches as well as lines
+  enable_coverage :condition         # ...and both sides of each && and ||
   cover "{app,lib}/**/*.rb"          # report on these files, even if never loaded
   skip "app/legacy"                  # ...but leave these out
   group "Models", "app/models"       # organize the report into groups

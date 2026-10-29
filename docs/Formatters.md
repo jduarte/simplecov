@@ -150,7 +150,7 @@ human in the loop. The diff still lands in the working tree for the next commit 
 generate types, or pin to a known shape. Every emitted document carries a top-level `$schema` URL pointing at the
 versioned canonical, plus a human-readable `meta.schema_version` (`"major.minor"`).
 
-The **versioned canonical** lives at [`schemas/coverage-v1.4.schema.json`](../schemas/coverage-v1.4.schema.json) and
+The **versioned canonical** lives at [`schemas/coverage-v1.5.schema.json`](../schemas/coverage-v1.5.schema.json) and
 long-lived integrations should pin to it. Once a SimpleCov release ships with a given versioned schema file, that file
 is immutable: bug fixes, additions, or shape changes ship as a new versioned file (a minor or major bump), never as a
 silent rewrite of an already-released one. Schemas may still be corrected in-place between gem releases — i.e., the
@@ -164,7 +164,7 @@ The schema version is independent of the gem version:
 - Removals or shape changes bump the **major** segment, and ship as a new `schemas/coverage-vX.0.schema.json` file so
   v1.x consumers stay valid.
 
-The current version is **1.4**. 1.1 added the optional per-test context data recorded under
+The current version is **1.5**. 1.1 added the optional per-test context data recorded under
 [`track_tests`](Configuration.md#tracking-which-test-covers-each-line): a document-level `contexts` array of ids and,
 per file, hex bitmaps of the lines each context executed, present exactly when the formatted result carried a
 complete context map. 1.2 added the optional `history` array (the recorded run history with this run appended). 1.3
@@ -174,14 +174,18 @@ added the optional `production` section: the window and per-file lines a
 time. 1.4 added the optional `contexts_dropped` string, saying why a run that tracked tests carries no `contexts`
 (tests that ran concurrently in threads, or a merge that mixed results with and without a map), and documents that
 a bare test file path in `contexts`, beside ids pointing into the same file, is what that file ran outside its tests
-(its loading, and under RSpec its groups' `before(:all)` hooks) rather than a test. Top-level structure:
+(its loading, and under RSpec its groups' `before(:all)` hooks) rather than a test. 1.5 added
+[condition coverage](Configuration.md#condition-coverage): the `condition_coverage` meta flag, `conditions` totals,
+and a per-file `conditions` array whose entries name the operator (`&&`, `||`, `&&=`, or `||=`), the arm (`evaluated`
+or `short_circuited`), the lines the expression spans, the operator's line, and the hit count, present when condition
+coverage is enabled. Top-level structure:
 
 ```jsonc
 {
-  "$schema":  "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.4.schema.json",
-  "meta":     { /* schema_version, simplecov_version, command_name, project_name, timestamp, root, commit, line_coverage, branch_coverage, method_coverage */ },
-  "total":    { /* aggregate stats for lines (and branches / methods when enabled) */ },
-  "coverage": { "<project-relative path>": { /* per-file lines, source, branches, methods, contexts, etc. */ } },
+  "$schema":  "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.5.schema.json",
+  "meta":     { /* schema_version, simplecov_version, command_name, project_name, timestamp, root, commit, line_coverage, branch_coverage, method_coverage, condition_coverage */ },
+  "total":    { /* aggregate stats for lines (and branches / methods / conditions when enabled) */ },
+  "coverage": { "<project-relative path>": { /* per-file lines, source, branches, methods, conditions, contexts, etc. */ } },
   "contexts": [ /* recorded context ids (with track_tests: test definition locations); present only when recorded */ ],
   "contexts_dropped": "/* why a tracked run carries no contexts; present only when a map was dropped */",
   "history":  [ /* recorded runs, oldest first, this run last; present only when past runs are recorded */ ],
