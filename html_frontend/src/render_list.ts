@@ -15,6 +15,7 @@ interface FileListArgs {
   lineCoverage: boolean;
   branchCoverage: boolean;
   methodCoverage: boolean;
+  conditionCoverage?: boolean;
   primaryCoverage: CoverageType;
   contextsEnabled?: boolean;
   loadingContexts?: Set<number>;
@@ -26,6 +27,7 @@ function renderFileListHead(args: FileListArgs, outsideTotal?: number): string {
   const lineStats = lineCoverage ? stats.lines : undefined;
   const branchStats = branchCoverage ? stats.branches : undefined;
   const methodStats = methodCoverage ? stats.methods : undefined;
+  const conditionStats = args.conditionCoverage ? stats.conditions : undefined;
   const primaryStats = primaryCoverageStat(stats, primaryCoverage);
   const primaryPercent = primaryStats ? primaryStats.percent : 100.0;
 
@@ -39,6 +41,7 @@ function renderFileListHead(args: FileListArgs, outsideTotal?: number): string {
   if (lineStats) html.push(renderHeaderCells('Line Coverage', 'line', 'Covered', 'Lines'));
   if (branchCoverage) html.push(renderHeaderCells('Branch Coverage', 'branch', 'Covered', 'Branches'));
   if (methodCoverage) html.push(renderHeaderCells('Method Coverage', 'method', 'Covered', 'Methods'));
+  if (args.conditionCoverage) html.push(renderHeaderCells('Condition Coverage', 'condition', 'Covered', 'Arms'));
   if (args.production) {
     html.push('<th class="cell--production" data-sort-key="production"><span class="th-label">Last Run in Production</span></th>');
   }
@@ -49,6 +52,7 @@ function renderFileListHead(args: FileListArgs, outsideTotal?: number): string {
   if (lineStats) html.push(renderCoverageCells(lineStats.percent, lineStats.covered, lineStats.total, 'line', true, outsideTotal));
   if (branchStats) html.push(renderCoverageCells(branchStats.percent, branchStats.covered, branchStats.total, 'branch', true));
   if (methodStats) html.push(renderCoverageCells(methodStats.percent, methodStats.covered, methodStats.total, 'method', true));
+  if (conditionStats) html.push(renderCoverageCells(conditionStats.percent, conditionStats.covered, conditionStats.total, 'condition', true));
   if (args.production) html.push('<td class="cell--production"></td>');
   html.push('</tr></thead><tbody>');
 
@@ -61,6 +65,7 @@ interface FileRowArgs {
   lineCoverage: boolean;
   branchCoverage: boolean;
   methodCoverage: boolean;
+  conditionCoverage?: boolean;
   outsideLines?: number;
   production?: ProductionData;
 }
@@ -78,7 +83,7 @@ function renderProductionCell(filename: string, production: ProductionData): str
 }
 
 function renderFileRow(args: FileRowArgs): string {
-  const { filename, coverage: f, lineCoverage, branchCoverage, methodCoverage, outsideLines, production } = args;
+  const { filename, coverage: f, lineCoverage, branchCoverage, methodCoverage, conditionCoverage, outsideLines, production } = args;
   const id = fileId(filename);
 
   const dataAttrs: string[] = [];
@@ -91,6 +96,9 @@ function renderFileRow(args: FileRowArgs): string {
   }
   if (methodCoverage) {
     dataAttrs.push(`data-covered-methods="${f.covered_methods || 0}"`, `data-total-methods="${f.total_methods || 0}"`);
+  }
+  if (conditionCoverage) {
+    dataAttrs.push(`data-covered-conditions="${f.covered_conditions || 0}"`, `data-total-conditions="${f.total_conditions || 0}"`);
   }
 
   const cells = [
@@ -109,13 +117,17 @@ function renderFileRow(args: FileRowArgs): string {
     const pct = f.methods_covered_percent === undefined ? 100.0 : f.methods_covered_percent;
     cells.push(renderCoverageCells(pct, f.covered_methods || 0, f.total_methods || 0, 'method', false));
   }
+  if (conditionCoverage) {
+    const pct = f.conditions_covered_percent === undefined ? 100.0 : f.conditions_covered_percent;
+    cells.push(renderCoverageCells(pct, f.covered_conditions || 0, f.total_conditions || 0, 'condition', false));
+  }
   if (production) cells.push(renderProductionCell(filename, production));
   cells.push('</tr>');
   return cells.join('');
 }
 
 export function renderFileList(args: FileListArgs): string {
-  const { filenames, allCoverage, lineCoverage, branchCoverage, methodCoverage, contextsEnabled, loadingContexts, production } = args;
+  const { filenames, allCoverage, lineCoverage, branchCoverage, methodCoverage, conditionCoverage, contextsEnabled, loadingContexts, production } = args;
 
   const outsideByFile = contextsEnabled && lineCoverage ? new Map(
     filenames.flatMap((fn) => {
@@ -132,7 +144,7 @@ export function renderFileList(args: FileListArgs): string {
     const f = allCoverage[fn];
     if (!f) continue;
     html.push(renderFileRow({
-      filename: fn, coverage: f, lineCoverage, branchCoverage, methodCoverage,
+      filename: fn, coverage: f, lineCoverage, branchCoverage, methodCoverage, conditionCoverage,
       outsideLines: outsideByFile?.get(fn), production
     }));
   }

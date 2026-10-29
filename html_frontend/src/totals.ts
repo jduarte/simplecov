@@ -11,7 +11,8 @@ export interface DataAttrPair {
 export const dataAttrMap: Record<string, DataAttrPair> = {
   line:   { covered: 'coveredLines',   total: 'relevantLines' },
   branch: { covered: 'coveredBranches', total: 'totalBranches' },
-  method: { covered: 'coveredMethods',  total: 'totalMethods' }
+  method: { covered: 'coveredMethods',  total: 'totalMethods' },
+  condition: { covered: 'coveredConditions', total: 'totalConditions' }
 };
 
 export function updateTotalsRow(container: Element): void {

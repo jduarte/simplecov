@@ -173,6 +173,21 @@ describe('jumpToMissedLine', () => {
     expect(body.scrollTop).toBe(100);
   });
 
+  // The opened file's markup outlives the test, so its line goes back the way
+  // it was.
+  test('stops at a line with a missed condition too', () => {
+    const [first] = openMissedFile();
+    first.className = 'missed-condition';
+    const body = getDialogBody();
+    body.scrollTop = 300;
+    try {
+      jumpToMissedLine(1);
+      expect(body.scrollTop).toBe(100);
+    } finally {
+      first.className = 'missed';
+    }
+  });
+
   test('walks backward through missed lines and wraps', () => {
     openMissedFile();
     const body = getDialogBody();

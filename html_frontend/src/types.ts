@@ -11,6 +11,7 @@ export interface CoverageData {
     line_coverage: boolean;
     branch_coverage: boolean;
     method_coverage: boolean;
+    condition_coverage?: boolean;
   };
   total: StatGroup;
   coverage: Record<string, FileCoverage>;
@@ -40,12 +41,13 @@ export interface HistoryEntry {
   files?: Record<string, Record<string, number>>;
 }
 
-export type CoverageType = 'line' | 'branch' | 'method';
+export type CoverageType = 'line' | 'branch' | 'method' | 'condition';
 
 export interface StatGroup {
   lines?: CoverageStat;
   branches?: CoverageStat;
   methods?: CoverageStat;
+  conditions?: CoverageStat;
 }
 
 export interface CoverageStat {
@@ -73,6 +75,11 @@ export interface FileCoverage {
   covered_methods?: number;
   missed_methods?: number;
   total_methods?: number;
+  conditions?: ConditionEntry[];
+  conditions_covered_percent?: number;
+  covered_conditions?: number;
+  missed_conditions?: number;
+  total_conditions?: number;
   contexts?: Record<string, string>;
 }
 
@@ -82,6 +89,15 @@ export interface BranchEntry {
   end_line: number;
   coverage: number | 'ignored';
   inline: boolean;
+  report_line: number;
+}
+
+export interface ConditionEntry {
+  operator: string;
+  type: string;
+  start_line: number;
+  end_line: number;
+  coverage: number | 'ignored';
   report_line: number;
 }
 

@@ -117,15 +117,19 @@ interface CoverageSummaryArgs {
   totalBranches: number;
   coveredMethods: number;
   totalMethods: number;
+  coveredConditions?: number;
+  totalConditions?: number;
   lineCoverage: boolean;
   branchCoverage: boolean;
   methodCoverage: boolean;
+  conditionCoverage?: boolean;
   showMethodToggle: boolean;
   coveredByTests?: number;
   coveredOutsideTests?: number;
   linePercent?: number;
   branchPercent?: number;
   methodPercent?: number;
+  conditionPercent?: number;
 }
 
 export function renderCoverageSummary(args: CoverageSummaryArgs): string {
@@ -136,5 +140,10 @@ export function renderCoverageSummary(args: CoverageSummaryArgs): string {
     lineSummary +
     renderTypeSummary({ type: 'branch', label: 'Branch coverage', covered: args.coveredBranches, total: args.totalBranches, enabled: args.branchCoverage, percent: args.branchPercent, missedClass: 'missed-branch-text' }) +
     renderTypeSummary({ type: 'method', label: 'Method coverage', covered: args.coveredMethods, total: args.totalMethods, enabled: args.methodCoverage, percent: args.methodPercent, missedClass: 'missed-method-text-color', toggle: args.showMethodToggle }) +
+    // Opt-in, so a report that never measured conditions doesn't announce
+    // them as disabled.
+    (args.conditionCoverage
+      ? renderTypeSummary({ type: 'condition', label: 'Condition coverage', covered: args.coveredConditions || 0, total: args.totalConditions || 0, enabled: true, percent: args.conditionPercent, suffix: 'condition arms covered', missedClass: 'missed-condition-text' })
+      : '') +
     '</div>';
 }

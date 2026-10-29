@@ -55,6 +55,9 @@
   --missed-method-bg: #e8d0ff;
   --missed-method-line-num-bg: #d4b0ff;
   --missed-method-text: #7b2d8e;
+  --missed-condition-bg: #ffd6ea;
+  --missed-condition-line-num-bg: #ffa8d0;
+  --missed-condition-text: #a8236a;
   --outside-tests-bg: #dfe5ee;
   --outside-tests-line-num-bg: #b6c4da;
   --outside-tests-text: #3f5578;
@@ -111,6 +114,9 @@
     --missed-method-bg: #1e1830;
     --missed-method-line-num-bg: #2a2044;
     --missed-method-text: #dcb8ff;
+    --missed-condition-bg: #301826;
+    --missed-condition-line-num-bg: #4a2038;
+    --missed-condition-text: #ff9ccc;
     --outside-tests-bg: #1a2231;
     --outside-tests-line-num-bg: #28344c;
     --outside-tests-text: #9db2d9;
@@ -165,6 +171,9 @@
   --missed-method-bg: #1e1830;
   --missed-method-line-num-bg: #2a2044;
   --missed-method-text: #dcb8ff;
+  --missed-condition-bg: #301826;
+  --missed-condition-line-num-bg: #4a2038;
+  --missed-condition-text: #ff9ccc;
   --outside-tests-bg: #1a2231;
   --outside-tests-line-num-bg: #28344c;
   --outside-tests-text: #9db2d9;
@@ -421,6 +430,7 @@ abbr.timeago {
 
 .summary-stats .missed-branch-text b,
 .summary-stats .missed-method-text-color b,
+.summary-stats .missed-condition-text b,
 .summary-stats .green b,
 .summary-stats .red b {
   color: inherit;
@@ -704,6 +714,7 @@ table.file_list .totals-row td.cell--denominator {
 
 .missed-branch-text { color: var(--missed-branch-text); }
 .missed-method-text-color { color: var(--missed-method-text); }
+.missed-condition-text { color: var(--missed-condition-text); }
 
 
 dialog.source-dialog {
@@ -773,15 +784,20 @@ dialog.source-dialog[open] {
   grid-row: 4;
 }
 
+.source-dialog__title .t-condition-summary {
+  grid-column: 1;
+  grid-row: 5;
+}
+
 .source-dialog__title > .t-missed-method-list {
   grid-column: 1 / -1;
-  grid-row: 5;
+  grid-row: 6;
 }
 
 
 .source-legend {
   grid-column: 2 / 3;
-  grid-row: 2 / 5;
+  grid-row: 2 / 6;
   display: grid;
   grid-template-rows: subgrid;
   grid-template-columns: repeat(4, auto);
@@ -798,6 +814,7 @@ dialog.source-dialog[open] {
 .source-legend__row--line .source-legend__item { grid-row: 1; }
 .source-legend__row--branch .source-legend__item { grid-row: 2; grid-column: 4; }
 .source-legend__row--method .source-legend__item { grid-row: 3; grid-column: 4; }
+.source-legend__row--condition .source-legend__item { grid-row: 4; grid-column: 4; }
 
 .source-legend__row--line .source-legend__item:nth-last-child(1) { grid-column: 4; }
 .source-legend__row--line .source-legend__item:nth-last-child(2) { grid-column: 3; }
@@ -826,6 +843,7 @@ dialog.source-dialog[open] {
 .source-legend__swatch--skipped       { background: var(--skipped-bg); border-color: var(--skipped-line-num-bg); color: var(--text-secondary); }
 .source-legend__swatch--missed-branch { background: var(--missed-branch-bg); border-color: var(--missed-branch-line-num-bg); color: var(--missed-branch-text); }
 .source-legend__swatch--missed-method { background: var(--missed-method-bg); border-color: var(--missed-method-line-num-bg); color: var(--missed-method-text); }
+.source-legend__swatch--missed-condition { background: var(--missed-condition-bg); border-color: var(--missed-condition-line-num-bg); color: var(--missed-condition-text); }
 .source-legend__swatch--outside-tests { background: var(--outside-tests-bg); border-color: var(--outside-tests-line-num-bg); color: var(--outside-tests-text); }
 .source-legend__swatch--production-never { background: var(--covered-bg); border-color: var(--covered-line-num-bg); box-shadow: inset 4px 0 0 var(--production-never-marker); }
 .source-legend__swatch--production-ran   { background: var(--missed-bg); border-color: var(--missed-line-num-bg); box-shadow: inset 4px 0 0 var(--production-marker); }
@@ -1021,6 +1039,7 @@ table.file_list .totals-row td {
 .source_table .skipped       { background-color: var(--skipped-bg); }
 .source_table .missed-branch { background-color: var(--missed-branch-bg); }
 .source_table .missed-method { background-color: var(--missed-method-bg); }
+.source_table .missed-condition { background-color: var(--missed-condition-bg); }
 
 .source_table .covered::before       { background-color: var(--covered-line-num-bg); }
 .source_table .missed::before        { background-color: var(--missed-line-num-bg); }
@@ -1028,6 +1047,7 @@ table.file_list .totals-row td {
 .source_table .skipped::before       { background-color: var(--skipped-line-num-bg); }
 .source_table .missed-branch::before { background-color: var(--missed-branch-line-num-bg); }
 .source_table .missed-method::before { background-color: var(--missed-method-line-num-bg); }
+.source_table .missed-condition::before { background-color: var(--missed-condition-line-num-bg); }
 
 
 .source_table .outside-tests         { background-color: var(--outside-tests-bg); }
@@ -1043,7 +1063,8 @@ table.file_list .totals-row td {
 
 .source_table .missed.production-ran::before,
 .source_table .missed-branch.production-ran::before,
-.source_table .missed-method.production-ran::before {
+.source_table .missed-method.production-ran::before,
+.source_table .missed-condition.production-ran::before {
   box-shadow: inset 4px 0 0 var(--production-marker);
 }
 
@@ -1442,7 +1463,8 @@ table.file_list thead th.sorting_desc::after    { content: "\2193"; }
 
   .source-dialog__title .t-line-summary,
   .source-dialog__title .t-branch-summary,
-  .source-dialog__title .t-method-summary {
+  .source-dialog__title .t-method-summary,
+  .source-dialog__title .t-condition-summary {
     grid-column: 1 / -1;
   }
 
@@ -1451,7 +1473,7 @@ table.file_list thead th.sorting_desc::after    { content: "\2193"; }
   }
 
   .source-dialog__title > .t-missed-method-list {
-    grid-row: 5;
+    grid-row: 6;
   }
 
   .source-legend {
@@ -1515,6 +1537,9 @@ table.file_list thead th.sorting_desc::after    { content: "\2193"; }
     --missed-method-bg: #e8d0ff;
     --missed-method-line-num-bg: #d4b0ff;
     --missed-method-text: #7b2d8e;
+    --missed-condition-bg: #ffd6ea;
+    --missed-condition-line-num-bg: #ffa8d0;
+    --missed-condition-text: #a8236a;
     --outside-tests-bg: #dfe5ee;
     --outside-tests-line-num-bg: #b6c4da;
     --outside-tests-text: #3f5578;
