@@ -1,0 +1,21 @@
+module SimpleCov
+  module ConditionCoverage
+    class ColumnMap
+      type tuple = [untyped, untyped, Integer, Integer, Integer, Integer]
+
+      NONE: Array[[Integer, Integer]]
+
+      @ends_by_line: Hash[Integer, Array[[Integer, Integer]]]
+
+      def initialize: (Array[[Integer, Integer, Integer]] splices) -> void
+
+      def original_column: (Integer line, Integer column) -> Integer
+
+      def translate: (tuple tuple) -> tuple
+
+      def translate_branches: (Hash[tuple, Hash[tuple, Integer]] branches) -> Hash[tuple, Hash[tuple, Integer]]
+
+      def translate_methods: (Hash[tuple, Integer] methods) -> Hash[tuple, Integer]
+    end
+  end
+end

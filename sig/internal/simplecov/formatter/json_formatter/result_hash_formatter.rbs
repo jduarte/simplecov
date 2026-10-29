@@ -2,7 +2,7 @@ module SimpleCov
   module Formatter
     class JSONFormatter
       class ResultHashFormatter
-        SCHEMA_VERSION: "1.4"
+        SCHEMA_VERSION: "1.5"
 
         SCHEMA_URL: ::String
 
@@ -20,7 +20,7 @@ module SimpleCov
 
         def self.git_commit: () -> untyped
 
-        def self.coverage_flags: () -> { line_coverage: untyped, branch_coverage: untyped, method_coverage: untyped }
+        def self.coverage_flags: () -> { line_coverage: untyped, branch_coverage: untyped, method_coverage: untyped, condition_coverage: untyped }
 
         def self.format_coverage_statistics: (untyped statistics) -> Hash[Symbol, untyped]
 

@@ -93,18 +93,18 @@ describe('theme-control layout contract', () => {
     expect(declaration('.source-dialog__title .summary-stats', 'display')).toBe('contents');
     expect(declaration('.source-legend', 'display')).toBe('grid');
     expect(declaration('.source-legend', 'grid-column')).toBe('2 / 3');
-    expect(declaration('.source-legend', 'grid-row')).toBe('2 / 5');
+    expect(declaration('.source-legend', 'grid-row')).toBe('2 / 6');
     expect(declaration('.source-legend', 'grid-template-rows')).toBe('subgrid');
     expect(declaration('.source-legend', 'grid-template-columns')).toBe('repeat(4, auto)');
     expect(declaration('.source-legend', 'justify-content')).toBe('end');
     expect(declaration('.source-legend', 'justify-items')).toBe('start');
     expect(declaration('.source-legend__row', 'display')).toBe('contents');
 
-    for (const [type, row, legendRow] of [['line', '2', '1'], ['branch', '3', '2'], ['method', '4', '3']]) {
+    for (const [type, row, legendRow] of [['line', '2', '1'], ['branch', '3', '2'], ['method', '4', '3'], ['condition', '5', '4']]) {
       expect(declaration(`.source-dialog__title .t-${type}-summary`, 'grid-row')).toBe(row);
       expect(declaration(`.source-legend__row--${type} .source-legend__item`, 'grid-row')).toBe(legendRow);
     }
-    for (const type of ['branch', 'method']) {
+    for (const type of ['branch', 'method', 'condition']) {
       expect(declaration(`.source-legend__row--${type} .source-legend__item`, 'grid-column')).toBe('4');
     }
     expect(declaration('.source-legend__row--line .source-legend__item:nth-last-child(1)', 'grid-column')).toBe('4');
@@ -196,7 +196,7 @@ describe('small-screen layout', () => {
   test('stacks the source header so the file name gets the full width', () => {
     const narrow = mediaBlock(NARROW);
     expect(declaration('.source-legend', 'grid-column', narrow)).toBe('1 / -1');
-    const summaries = ['line', 'branch', 'method'].map((type) => `.source-dialog__title .t-${type}-summary`);
+    const summaries = ['line', 'branch', 'method', 'condition'].map((type) => `.source-dialog__title .t-${type}-summary`);
     expect(declaration(summaries.join(',\n  '), 'grid-column', narrow)).toBe('1 / -1');
     expect(declaration('.source-dialog__title h2', 'word-break', narrow)).toBe('normal');
   });

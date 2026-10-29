@@ -70,6 +70,7 @@ module SimpleCov
         criteria << :line if SimpleCov.line_coverage?
         criteria << :branch if SimpleCov.branch_coverage?
         criteria << :method if SimpleCov.method_coverage?
+        criteria << :condition if SimpleCov.condition_coverage?
         criteria
       end
 

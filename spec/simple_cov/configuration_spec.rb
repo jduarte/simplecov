@@ -2354,10 +2354,45 @@ RSpec.describe SimpleCov::Configuration do
   describe "the coverage block's ignore verb" do
     after { config.clear_coverage_criteria }
 
-    %i[ignored_branches ignored_methods].each do |setting|
+    %i[ignored_branches ignored_methods ignored_conditions].each do |setting|
       it "defaults #{setting} to empty" do
         expect(config.public_send(setting)).to eq []
       end
+    end
+
+    it "stores :memoized for coverage :condition" do
+      config.coverage(:condition) { ignore :memoized }
+
+      expect(config.ignored_condition?(:memoized)).to be true
+    end
+
+    it "answers false for a condition token never stored" do
+      expect(config.ignored_condition?(:memoized)).to be false
+    end
+
+    it "answers the condition tokens stored so far" do
+      stored = nil
+      config.coverage(:condition) { stored = ignore :memoized }
+
+      expect(stored).to eq [:memoized]
+    end
+
+    it "takes condition tokens as a one-liner keyword list" do
+      config.coverage :condition, ignore: %i[memoized]
+
+      expect(config.ignored_conditions).to eq [:memoized]
+    end
+
+    it "unions and deduplicates condition tokens across calls" do
+      2.times { config.coverage(:condition) { ignore :memoized } }
+
+      expect(config.ignored_conditions).to eq [:memoized]
+    end
+
+    it "raises on an unknown condition token, naming the supported ones" do
+      expect { config.coverage(:condition) { ignore :"||=" } }
+        .to raise_error(SimpleCov::ConfigurationError,
+          /Unsupported condition type :"\|\|=".*Supported values are \[:memoized\]/m)
     end
 
     %i[implicit_else eval_generated].each do |token|
@@ -2597,6 +2632,44 @@ RSpec.describe SimpleCov::Configuration do
       allow(config).to receive(:method_coverage_supported?).and_return(false)
 
       expect(config).not_to be_method_coverage
+    end
+  end
+
+  describe "#condition_coverage?" do
+    it "returns true if condition coverage is being measured" do
+      allow(config).to receive(:condition_coverage_supported?).and_return(true)
+      config.enable_coverage :condition
+
+      expect(config).to be_condition_coverage
+    end
+
+    it "returns false for line coverage" do
+      allow(config).to receive(:condition_coverage_supported?).and_return(true)
+
+      expect(config).not_to be_condition_coverage
+    end
+
+    it "returns false where the runtime cannot measure conditions, even when asked to" do
+      config.enable_coverage :condition
+      allow(config).to receive(:condition_coverage_supported?).and_return(false)
+
+      expect(config).not_to be_condition_coverage
+    end
+
+    it "never asks about support when conditions aren't enabled, since that means loading Prism" do
+      allow(config).to receive(:condition_coverage_supported?)
+
+      config.condition_coverage?
+
+      expect(config).not_to have_received(:condition_coverage_supported?)
+    end
+  end
+
+  describe "#condition_coverage_supported?" do
+    it "answers whatever condition coverage itself says" do
+      allow(SimpleCov::ConditionCoverage).to receive(:supported?).and_return(:verdict)
+
+      expect(config.condition_coverage_supported?).to eq(:verdict)
     end
   end
 
@@ -3966,7 +4039,7 @@ RSpec.describe SimpleCov::Configuration do
     it "refuses to ignore anything for a criterion that has nothing to ignore" do
       expect { config.coverage(:line) { ignore :eval_generated } }
         .to raise_error(SimpleCov::ConfigurationError,
-          "`ignore` is supported for `coverage :branch` and `coverage :method`, not :line")
+          "`ignore` is supported for `coverage :branch`, `coverage :method`, and `coverage :condition`, not :line")
     end
   end
 
@@ -4450,7 +4523,7 @@ RSpec.describe SimpleCov::Configuration do
           "minimum_coverage_by_file keys must be Symbol (criterion), String, or Regexp; got 42"],
       "an unsupported criterion" =>
         [->(config) { config.enable_coverage :sentence },
-          "Unsupported coverage criterion sentence, supported values are [:line, :branch, :method, :oneshot_line]"]
+          "Unsupported coverage criterion sentence, supported values are [:line, :branch, :method, :condition, :oneshot_line]"]
     }.each do |description, (invocation, message)|
       it "names the setting and the value for #{description}" do
         expect { capture_stderr { invocation.call(config) } }

@@ -9,17 +9,17 @@ module SimpleCov
   # opening a region that runs until the matching enable) and the inline form
   # (the directive trails real code, affecting that line alone).
   #
-  # Categories are `:line`, `:branch`, and `:method`, combinable with commas.
-  # Omitting categories targets all three. Any text after the directive is a
-  # free-form reason and is discarded, so an unrecognised category name
-  # silently falls into the reason bucket and disables everything: a
-  # deliberate over-disable, so the typo is visible in the report rather than
-  # silently disabling nothing.
+  # Categories are `:line`, `:branch`, `:method`, and `:condition`, combinable
+  # with commas. Omitting categories targets all four. Any text after the
+  # directive is a free-form reason and is discarded, so an unrecognised
+  # category name silently falls into the reason bucket and disables
+  # everything: a deliberate over-disable, so the typo is visible in the
+  # report rather than silently disabling nothing.
   #
   # Comment extraction goes through `Ripper.lex` so directive markers inside
   # string literals or heredocs are correctly ignored.
   class Directive
-    CATEGORIES = %i[line branch method].freeze
+    CATEGORIES = %i[line branch method condition].freeze
 
     CATEGORY_PATTERN = "(?:#{CATEGORIES.join("|")})".freeze
     CATEGORIES_PATTERN = "(?:#{CATEGORY_PATTERN}(?:\\s*,\\s*#{CATEGORY_PATTERN})*)".freeze

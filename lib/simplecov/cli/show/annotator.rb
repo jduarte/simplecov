@@ -37,6 +37,7 @@ module SimpleCov
           missed_lines(entry).each { |line| markers[line] << "missed" }
           each_missed(entry["branches"]) { |line| markers[line] << "branch missed" }
           each_missed(entry["methods"]) { |line| markers[line] << "method missed" }
+          each_missed(entry["conditions"]) { |line| markers[line] << "condition missed" }
           markers
         end
 

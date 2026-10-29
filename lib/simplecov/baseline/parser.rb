@@ -34,7 +34,7 @@ module SimpleCov
         CRITERIA[criterion_key.to_s] || raise(
           ConfigurationError,
           "baseline file #{path}: unknown criterion #{criterion_key.inspect} for #{file} " \
-          "(expected lines, branches, or methods)"
+          "(expected lines, branches, methods, or conditions)"
         )
       end
 

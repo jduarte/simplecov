@@ -60,8 +60,16 @@ RSpec.describe SimpleCov::UnloadedFileInjector do
     it "passes the caller's choice of synthesis through" do
       allow(SimpleCov::SimulateCoverage).to receive(:call).and_return({"lines" => []})
 
+      described_class.call({}, [sample], synthesize: true, lines: false, conditions: true)
+      expect(SimpleCov::SimulateCoverage).to have_received(:call)
+        .with(sample, synthesize: true, lines: false, conditions: true)
+    end
+
+    it "simulates no conditions unless asked to" do
+      allow(SimpleCov::SimulateCoverage).to receive(:call).and_return({"lines" => []})
+
       described_class.call({}, [sample], synthesize: true, lines: false)
-      expect(SimpleCov::SimulateCoverage).to have_received(:call).with(sample, synthesize: true, lines: false)
+      expect(SimpleCov::SimulateCoverage).to have_received(:call).with(sample, hash_including(conditions: false))
     end
 
     it "names the paths the result doesn't carry as injected" do

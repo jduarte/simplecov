@@ -569,7 +569,7 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
   end
 
   describe "what it does with the coverage it collected",
-    mutant_expression: ["SimpleCov.process_coverage_result", "SimpleCov.build_result"] do
+    mutant_expression: ["SimpleCov.process_coverage_result", "SimpleCov.build_result", "SimpleCov.measured_coverage"] do
     include_context "with a coverage slice to process"
 
     let(:raw) { {sample => {"lines" => [1, 1]}} }
@@ -583,6 +583,30 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
       process_slice
 
       expect(SimpleCov::ViewCoverage).to have_received(:compile_unrendered)
+    end
+
+    context "when it measured conditions" do
+      let(:merged) { {sample => {"lines" => [1, 1], :conditions => {}}} }
+
+      before do
+        allow(described_class).to receive(:condition_coverage?).and_return(true)
+        allow(SimpleCov::ConditionCoverage).to receive(:merge_into).with(raw).and_return(merged)
+        allow(SimpleCov::UselessResultsRemover).to receive(:call).and_call_original
+
+        process_slice
+      end
+
+      it "adds them to what Coverage reported before anything filters it" do
+        expect(SimpleCov::UselessResultsRemover).to have_received(:call).with(merged)
+      end
+    end
+
+    it "leaves what Coverage reported alone when it measured no conditions" do
+      allow(SimpleCov::ConditionCoverage).to receive(:merge_into)
+
+      process_slice
+
+      expect(SimpleCov::ConditionCoverage).not_to have_received(:merge_into)
     end
 
     context "when something lies outside the project" do
@@ -765,11 +789,27 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
 
       it "takes the caller's word over the criteria" do
         allow(described_class).to receive_messages(branch_coverage?: true, method_coverage?: true,
-          line_coverage?: true)
+          line_coverage?: true, condition_coverage?: true)
 
-        inject(synthesize: false, lines: false)
+        inject(synthesize: false, lines: false, conditions: false)
         expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
-          .with(anything, anything, {synthesize: false, lines: false})
+          .with(anything, anything, {synthesize: false, lines: false, conditions: false})
+      end
+
+      it "synthesizes conditions when condition coverage is measured" do
+        allow(described_class).to receive(:condition_coverage?).and_return(true)
+
+        inject
+        expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
+          .with(anything, anything, hash_including(conditions: true))
+      end
+
+      it "synthesizes no conditions when condition coverage isn't measured" do
+        allow(described_class).to receive(:condition_coverage?).and_return(false)
+
+        inject
+        expect(SimpleCov::UnloadedFileInjector).to have_received(:call)
+          .with(anything, anything, hash_including(conditions: false))
       end
 
       it "simulates lines when line coverage is measured" do
@@ -2739,6 +2779,76 @@ RSpec.describe SimpleCov, mutant_expression: ["SimpleCov*", "SimpleCov::Configur
         described_class.send(:start_coverage_measurement)
 
         expect(Coverage).to have_received(:start).with(branches: true)
+      end
+    end
+
+    context "when condition coverage is enabled" do
+      around do |example|
+        previous = described_class.coverage_criteria.dup
+        example.run
+      ensure
+        described_class.clear_coverage_criteria
+        previous.each { |criterion| described_class.enable_coverage(criterion) }
+        described_class.remove_instance_variable(:@condition_coverage_declined) if
+          described_class.instance_variable_defined?(:@condition_coverage_declined)
+      end
+
+      before do
+        allow(Coverage).to receive(:start)
+        allow(SimpleCov::ConditionCoverage).to receive(:install)
+        described_class.enable_coverage :condition
+      end
+
+      it "keeps it out of what it starts Coverage with, which has no such mode" do
+        allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(Coverage).to have_received(:start).with({lines: true})
+      end
+
+      it "takes over loading to measure conditions itself" do
+        allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(SimpleCov::ConditionCoverage).to have_received(:install)
+      end
+
+      it "measures no lines it wasn't asked to alongside another Coverage mode" do
+        allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
+        described_class.enable_coverage :branch
+        described_class.disable_coverage :line
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(Coverage).to have_received(:start).with({branches: true})
+      end
+
+      it "still starts Coverage in its hash mode when conditions are all the run measures" do
+        allow(described_class).to receive(:condition_coverage_supported?).and_return(true)
+        described_class.disable_coverage :line
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(Coverage).to have_received(:start).with({lines: true})
+      end
+
+      it "leaves loading alone where the runtime cannot measure conditions" do
+        allow(described_class).to receive_messages(condition_coverage_supported?: false, warn: nil)
+
+        described_class.send(:start_coverage_measurement)
+
+        expect(SimpleCov::ConditionCoverage).not_to have_received(:install)
+      end
+
+      it "says the runtime cannot measure conditions, once however often tracking starts" do
+        allow(described_class).to receive_messages(condition_coverage_supported?: false, warn: nil)
+
+        2.times { described_class.send(:start_coverage_measurement) }
+
+        expect(described_class).to have_received(:warn)
+          .with("[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism, so this run doesn't measure it.").once
       end
     end
   end

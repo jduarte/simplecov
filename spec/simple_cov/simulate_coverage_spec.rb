@@ -68,6 +68,19 @@ RSpec.describe SimpleCov::SimulateCoverage do
           expect(method_names).to include(:bar)
         end
       end
+
+      it "synthesizes every condition at zero hits when asked for conditions" do
+        with_tmp_source("def f(a, b) = a && b\n") do |path|
+          arms = described_class.call(path, conditions: true)["conditions"].values.flat_map(&:values)
+          expect(arms).to eq([0, 0])
+        end
+      end
+
+      it "leaves conditions out unless asked for them" do
+        with_tmp_source("def f(a, b) = a && b\n") do |path|
+          expect(described_class.call(path)).not_to have_key("conditions")
+        end
+      end
     end
 
     context "with a multi-line method chain", if: line_stub_handles_multiline do

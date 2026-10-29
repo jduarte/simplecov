@@ -16,6 +16,10 @@ module SimpleCov
 
         def self.method_coverage_section: (untyped source_file) -> { methods: untyped, methods_covered_percent: untyped, covered_methods: untyped, missed_methods: untyped, total_methods: untyped }
 
+        def self.condition_coverage_section: (untyped source_file) -> { conditions: untyped, conditions_covered_percent: untyped, covered_conditions: untyped, missed_conditions: untyped, total_conditions: untyped }
+
+        def self.format_condition: (untyped condition) -> { operator: untyped, type: untyped, start_line: untyped, end_line: untyped, coverage: untyped, report_line: untyped }
+
         def self.format_line: (untyped line) -> ("ignored" | untyped)
 
         def self.format_branch: (untyped branch) -> { type: untyped, start_line: untyped, end_line: untyped, coverage: untyped, inline: untyped, report_line: untyped }

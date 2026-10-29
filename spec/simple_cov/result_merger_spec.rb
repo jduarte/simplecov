@@ -280,6 +280,26 @@ RSpec.describe SimpleCov::ResultMerger do
         expect(unloaded_files.carries?({}, "branches")).to be false
       end
     end
+
+    it "asks the configuration about conditions too, with no merged files" do
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(true)
+
+      expect(unloaded_files.carries?({}, "conditions")).to be true
+    end
+
+    it "simulates no conditions for the files nobody loaded when the merged files carry none" do
+      allow(SimpleCov).to receive(:inject_unloaded_files).and_return([{}, Set.new])
+      unloaded_files.inject({"a.rb" => {"lines" => [1]}}, [])
+
+      expect(SimpleCov).to have_received(:inject_unloaded_files).with(anything, [], hash_including(conditions: false))
+    end
+
+    it "simulates conditions for the files nobody loaded when the merged files carry them" do
+      allow(SimpleCov).to receive(:inject_unloaded_files).and_return([{}, Set.new])
+      unloaded_files.inject({"a.rb" => {"lines" => [1], "conditions" => {}}}, [])
+
+      expect(SimpleCov).to have_received(:inject_unloaded_files).with(anything, [], hash_including(conditions: true))
+    end
   end
 
   describe "the tracked paths a merge injects" do

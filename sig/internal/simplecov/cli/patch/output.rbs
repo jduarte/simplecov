@@ -4,6 +4,8 @@ module SimpleCov
       module Output
         OPTIONAL_CRITERIA: Array[Symbol]
 
+        CELL_LABELS: Hash[Symbol, String]
+
         CRITERIA: Array[Symbol]
 
         def self?.annotate: (untyped stdout, untyped rows, String kind) -> untyped

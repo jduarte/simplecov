@@ -190,13 +190,13 @@ module SimpleCov
 
         previous = _ = previous
         {line: previous[:line] || previous[:covered_percent],
-         branch: previous[:branch], method: previous[:method]}
+         branch: previous[:branch], method: previous[:method], condition: previous[:condition]}
       end
 
       def median_baseline
         totals = history_totals
         baseline = {} #: Hash[Symbol, untyped]
-        %i[line branch method].each do |criterion|
+        %i[line branch method condition].each do |criterion|
           values = totals.map { |entry| entry[criterion.to_s] }.grep(Numeric)
           baseline[criterion] = median(values) unless values.empty?
         end

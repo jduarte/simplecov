@@ -99,7 +99,7 @@ module SimpleCov
     # @api private -- the seam `SimpleCov::ResultMerger` injects through. Public
     # only because the merge runs in another object, on behalf of processes
     # whose configuration it may not share, so it supplies the paths itself.
-    def inject_unloaded_files(result, candidate_paths, synthesize: nil, lines: nil)
+    def inject_unloaded_files(result, candidate_paths, synthesize: nil, lines: nil, conditions: nil)
       return [result, Set.new] if candidate_paths.empty?
 
       # Synthesizing branch and method tuples means parsing every tracked file
@@ -110,7 +110,8 @@ module SimpleCov
       UnloadedFileInjector.call(
         result, candidate_paths,
         synthesize: synthesize.nil? ? branch_coverage? || method_coverage? : synthesize,
-        lines: lines.nil? ? line_coverage? : lines
+        lines: lines.nil? ? line_coverage? : lines,
+        conditions: conditions.nil? ? condition_coverage? : conditions
       )
     end
 
@@ -167,7 +168,7 @@ module SimpleCov
       # ActionView, which rules out the merge point that does the same job for
       # unloaded `.rb` files.
       ViewCoverage.compile_unrendered
-      raw = UselessResultsRemover.call(Coverage.result)
+      raw = UselessResultsRemover.call(measured_coverage)
       adapted = ResultAdapter.call(raw)
       # `Result#to_hash` serializes coverage after filtering, so a file this
       # process loaded and then filtered out would otherwise be recorded as
@@ -176,6 +177,12 @@ module SimpleCov
       tracked = tracked_file_paths - adapted.keys
       result, not_loaded = inject_unloaded ? inject_unloaded_files(adapted, tracked) : [adapted, Set.new]
       current_run.result = build_result(raw, result, not_loaded: not_loaded, tracked: tracked, report: report)
+    end
+
+    # Ruby's Coverage, plus the conditions SimpleCov counted itself.
+    def measured_coverage
+      coverage = Coverage.result
+      condition_coverage? ? ConditionCoverage.merge_into(coverage) : coverage
     end
 
     def build_result(raw, coverage, not_loaded:, tracked:, report:)

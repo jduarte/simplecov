@@ -1,0 +1,21 @@
+module SimpleCov
+  class SourceFile
+    class ConditionBuilder
+      @source_file: SourceFile
+
+      def initialize: (SourceFile source_file) -> void
+
+      def call: () -> Array[Condition]
+
+      private
+
+      def build_conditions_from: (Array[untyped] condition, Hash[untyped, Integer] arms) -> Array[Condition]
+
+      def operator_line: (Array[[Array[untyped], Integer]] parsed) -> Integer
+
+      def process_skipped: (Array[Condition] conditions) -> Array[Condition]
+
+      def cached_path?: (Condition condition) -> bool
+    end
+  end
+end

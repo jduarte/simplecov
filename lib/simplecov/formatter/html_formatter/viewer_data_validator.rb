@@ -12,8 +12,11 @@ module SimpleCov
           "branch_coverage" => "branches",
           "method_coverage" => "methods"
         }.freeze
+        # Flags a document written before they existed doesn't carry, which
+        # then reads as the criterion never measured.
+        OPTIONAL_COVERAGE_FLAGS = {"condition_coverage" => "conditions"}.freeze
         STAT_FIELDS = %w[covered missed total percent strength].freeze
-        private_constant :META_STRINGS, :COVERAGE_FLAGS, :STAT_FIELDS
+        private_constant :META_STRINGS, :COVERAGE_FLAGS, :OPTIONAL_COVERAGE_FLAGS, :STAT_FIELDS
 
         class << self
           def call(data)
@@ -102,7 +105,8 @@ module SimpleCov
             META_STRINGS.each { |key| validate_type!(meta, key, String, "meta") }
             validate_command_names!(meta)
             Time.iso8601(meta.fetch("timestamp"))
-            COVERAGE_FLAGS.each_key { |key| validate_boolean!(meta, key) }
+            COVERAGE_FLAGS.each_key { |flag| validate_boolean!(meta, flag) }
+            OPTIONAL_COVERAGE_FLAGS.each_key { |flag| validate_boolean!(meta, flag) unless meta[flag].nil? }
           rescue ArgumentError
             raise CoverageJSON::Error, "meta.timestamp must be an ISO 8601 date-time"
           end
@@ -115,8 +119,8 @@ module SimpleCov
           end
 
           def validate_statistics!(statistics, meta, location)
-            COVERAGE_FLAGS.each do |flag, criterion|
-              next unless meta.fetch(flag)
+            COVERAGE_FLAGS.merge(OPTIONAL_COVERAGE_FLAGS).each do |flag, criterion|
+              next unless meta[flag]
 
               values = validate_type!(statistics, criterion, Hash, location)
               STAT_FIELDS.each { |field| validate_type!(values, field, Numeric, "#{location}.#{criterion}") }

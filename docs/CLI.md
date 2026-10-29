@@ -190,8 +190,8 @@ $ simplecov badge --output coverage/badge.svg
 ```
 
 Without `--output` the SVG goes to stdout. The color follows the ladder badge services use for coverage (bright green
-at 90% and above, stepping down to red below 50%), `--criterion line|branch|method` picks which percentage the badge
-shows, and the label names the chosen criterion ("line coverage", "branch coverage", "method coverage") unless
+at 90% and above, stepping down to red below 50%), `--criterion line|branch|method|condition` picks which percentage the
+badge shows, and the label names the chosen criterion ("line coverage", "branch coverage", and so on) unless
 `--label TEXT` replaces it. The percent comes from the totals `coverage.json` already carries, so the badge always
 matches what the other read-only commands report.
 
@@ -210,7 +210,7 @@ $ simplecov uncovered --criterion branch
 ```
 
 `--threshold N` filters to files below N% coverage (default `100`); `--top N` caps the list at N entries (default
-`10`); `--criterion line|branch|method` chooses which coverage to rank by (default `line`). `--missing` appends the
+`10`); `--criterion line|branch|method|condition` chooses which coverage to rank by (default `line`). `--missing` appends the
 missed line ranges to each row (`50.00%  5/10  lib/foo.rb  missing 4-7,9`), following the chosen criterion, so the
 list says not just where to add tests but which lines they're for. `--annotate KIND` emits CI annotations instead of
 rows, one per contiguous missed range with project-relative paths, in the form the chosen host reads natively (see
@@ -359,8 +359,8 @@ line for cleaner CI logs. After merging, run `simplecov report` against the comb
 ### `diff` — coverage delta vs a baseline
 
 `simplecov diff <baseline>` reads two `coverage.json` files (current plus a baseline checked into the repo, or produced
-by a previous CI run) and prints the files whose coverage moved on any enabled criterion. When branch or method coverage
-is enabled, those deltas appear alongside the line delta on the same row:
+by a previous CI run) and prints the files whose coverage moved on any enabled criterion. When branch, method, or condition
+coverage is enabled, those deltas appear alongside the line delta on the same row:
 
 ```sh
 $ simplecov diff coverage/baseline.json
@@ -379,8 +379,8 @@ as a JSON array for programmatic consumption:
 ```sh
 $ simplecov diff --json coverage/baseline.json
 [
-  {"file":"lib/foo.rb","status":"changed","line_delta":-20.0,"branch_delta":-10.0,"method_delta":0.0},
-  {"file":"lib/bar.rb","status":"changed","line_delta":5.0,"branch_delta":0.0,"method_delta":0.0}
+  {"file":"lib/foo.rb","status":"changed","line_delta":-20.0,"branch_delta":-10.0,"method_delta":0.0,"condition_delta":0.0},
+  {"file":"lib/bar.rb","status":"changed","line_delta":5.0,"branch_delta":0.0,"method_delta":0.0,"condition_delta":0.0}
 ]
 ```
 
@@ -391,10 +391,10 @@ are normalized, so a baseline from an older SimpleCov still diffs cleanly agains
 
 `simplecov patch` answers the question `diff` does not: is the code in *this change* tested? It reads
 `git diff --unified=0 --merge-base <base>`, intersects the added and modified line numbers with the current report
-(`--input`), and prints line coverage — plus branch and method coverage over the branches and methods those lines
-carry, when the report measured them — over only that change, so a project that cannot move its overall number in one
-pull request can still require that everything it adds is covered. The `branches` and `methods` columns and the
-`branch <lines>` / `method <lines>` notes appear only for files whose touched lines actually held one.
+(`--input`), and prints line coverage — plus branch, method, and condition coverage over the branches, methods, and
+conditions those lines carry, when the report measured them — over only that change, so a project that cannot move its overall number in one
+pull request can still require that everything it adds is covered. The `branches`, `methods`, and `conditions`
+columns and the `branch <lines>` / `method <lines>` / `condition <lines>` notes appear only for files whose touched lines actually held one.
 
 ```sh
 $ simplecov patch --base main
@@ -407,7 +407,7 @@ $ simplecov patch --base main
 pass the pull request's target branch). The diff
 runs against the merge-base of `REF` and the working tree, so uncommitted edits count too — running `simplecov patch`
 before committing still scores the lines just written. `--minimum N` exits non-zero when patch coverage falls below N% — every measured criterion, line, branch,
-and method alike, must clear the floor — so it gates a change alongside the overall thresholds even when they
+method, and condition alike, must clear the floor — so it gates a change alongside the overall thresholds even when they
 are already satisfied:
 
 ```sh
@@ -415,7 +415,7 @@ $ simplecov patch --base origin/main --minimum 100
 ```
 
 `--annotate KIND` emits CI annotations instead of rows, one per contiguous missed range on the touched lines, and one
-per uncovered touched branch or method when the report measured them, so the host marks exactly the new code that lacks
+per uncovered touched branch, method, or condition when the report measured them, so the host marks exactly the new code that lacks
 a test (see [CI annotations](#ci-annotations)). Nothing else reaches stdout in that mode, and `--minimum` still decides
 the exit status, so the same step can annotate and gate:
 
@@ -440,9 +440,9 @@ run your suite with the JSON formatter enabled, then `simplecov patch` reads `co
 
 `uncovered` and `patch` share `--annotate KIND`, which turns their answer into the inline-annotation form a CI host
 reads natively, so a coverage gap appears on the diff or the build page with no upload step and no extra gem. Each
-annotation names a contiguous range of missed lines (`patch` adds one per uncovered touched branch or method), with a
-project-relative path and a message naming the criterion: "Not covered by tests", "Branch not covered by tests", or
-"Method not covered by tests". `--annotate` cannot combine with `--json`.
+annotation names a contiguous range of missed lines (`patch` adds one per uncovered touched branch, method, or condition),
+with a project-relative path and a message naming the criterion: "Not covered by tests", "Branch not covered by
+tests", "Method not covered by tests", or "Condition not fully covered by tests". `--annotate` cannot combine with `--json`.
 
 | Kind | Output | Where it lands |
 |------|--------|----------------|

@@ -161,6 +161,32 @@ RSpec.describe SimpleCov::Formatter::HTMLFormatter::ViewerDataValidator do
     expect { validate }.to raise_error(SimpleCov::CoverageJSON::Error, "total.branches must be a hash")
   end
 
+  it "asks for no condition statistics where the metadata says conditions weren't measured" do
+    data["meta"]["condition_coverage"] = false
+
+    expect(validate).to equal(data)
+  end
+
+  it "asks for condition statistics where the metadata claims conditions were measured" do
+    data["meta"]["condition_coverage"] = true
+
+    expect { validate }.to raise_error(SimpleCov::CoverageJSON::Error, "total.conditions must be a hash")
+  end
+
+  it "accepts condition statistics where they were measured" do
+    data["meta"]["condition_coverage"] = true
+    data["total"]["conditions"] = statistic.dup
+    data["groups"]["App"]["conditions"] = statistic.dup
+
+    expect(validate).to equal(data)
+  end
+
+  it "rejects a condition flag that isn't a boolean" do
+    data["meta"]["condition_coverage"] = "yes"
+
+    expect { validate }.to raise_error(SimpleCov::CoverageJSON::Error, "meta.condition_coverage must be a boolean")
+  end
+
   it "accepts an array of run names as command_names" do
     data["meta"]["command_names"] = %w[result1 result2]
     expect(validate).to equal(data)

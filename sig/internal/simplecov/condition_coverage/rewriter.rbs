@@ -1,0 +1,40 @@
+module SimpleCov
+  module ConditionCoverage
+    module Rewriter
+      class Splice
+        attr_reader offset: Integer
+        attr_reader closer: bool
+        attr_reader rank: Integer
+        attr_reader text: String
+
+        def initialize: (offset: Integer, closer: bool, rank: Integer, text: String) -> void
+
+        def sort_key: () -> [Integer, Integer, Integer]
+      end
+
+      PROBES: String
+
+      NOTHING: Array[untyped]
+
+      def self?.call: (String source, Integer file_index) -> [String, Array[Condition], ColumnMap]
+
+      private
+
+      def self?.plan: (Collector::Site site, Collector::Site? inner) -> [Collector::Site, untyped]
+
+      def self?.splices: (Collector::Site site, untyped target, Integer file_index) -> Array[Splice]
+
+      def self?.write_splices: (Collector::Site site, String probe, Integer rank) -> Array[Splice]
+
+      def self?.parenthesized: (untyped node) -> untyped
+
+      def self?.wrap: (untyped node, Integer rank, String call, bool bare) -> Array[Splice]
+
+      def self?.bare_argument?: (untyped node) -> bool
+
+      def self?.column_map: (untyped source, Array[Splice] splices) -> ColumnMap
+
+      def self?.splice: (String source, Array[Splice] splices) -> String
+    end
+  end
+end

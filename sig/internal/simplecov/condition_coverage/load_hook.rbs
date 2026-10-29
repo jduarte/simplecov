@@ -1,0 +1,7 @@
+module SimpleCov
+  module ConditionCoverage
+    module LoadHook
+      def load_iseq: (String path) -> RubyVM::InstructionSequence?
+    end
+  end
+end

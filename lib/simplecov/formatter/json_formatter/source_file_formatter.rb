@@ -10,6 +10,7 @@ module SimpleCov
             result.merge!(line_coverage_section(source_file)) if SimpleCov.line_coverage?
             result.merge!(branch_coverage_section(source_file)) if SimpleCov.branch_coverage?
             result.merge!(method_coverage_section(source_file)) if SimpleCov.method_coverage?
+            result.merge!(condition_coverage_section(source_file)) if SimpleCov.condition_coverage?
             result.merge!(contexts_section(source_file, contexts)) if contexts
             result
           end
@@ -64,6 +65,32 @@ module SimpleCov
               covered_methods: covered,
               missed_methods: missed,
               total_methods: covered + missed
+            }
+          end
+
+          # Every arm, `"ignored"` ones included, so a viewer can tell an arm
+          # nobody took from one the configuration set aside.
+          def condition_coverage_section(source_file)
+            covered = source_file.covered_conditions.size
+            missed = source_file.missed_conditions.size
+
+            {
+              conditions: source_file.conditions.map { |condition| format_condition(condition) },
+              conditions_covered_percent: source_file.covered_percent(:condition),
+              covered_conditions: covered,
+              missed_conditions: missed,
+              total_conditions: covered + missed
+            }
+          end
+
+          def format_condition(condition)
+            {
+              operator: condition.operator,
+              type: condition.type,
+              start_line: condition.start_line,
+              end_line: condition.end_line,
+              coverage: format_line(condition),
+              report_line: condition.report_line
             }
           end
 

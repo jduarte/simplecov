@@ -308,6 +308,21 @@ RSpec.describe SimpleCov::CoverageViolations, mutant_expression: "SimpleCov::Cov
       expect(violations.map { |v| v[:criterion] }).to contain_exactly(:line)
     end
 
+    it "measures a condition drop against the last run" do
+      stats = SimpleCov::CoverageStatistics.new(covered: 1, missed: 1)
+      result = instance_double(SimpleCov::Result, coverage_statistics: {condition: stats})
+      violations = described_class.maximum_drop(result, {condition: 5}, last_run: {result: {condition: 100.0}})
+      expect(violations).to contain_exactly(criterion: :condition, maximum: 5, actual: 50.0)
+    end
+
+    it "measures a condition drop against the history's median" do
+      stats = SimpleCov::CoverageStatistics.new(covered: 1, missed: 1)
+      result = instance_double(SimpleCov::Result, coverage_statistics: {condition: stats})
+      allow(SimpleCov::History).to receive(:read).and_return([{"totals" => {"condition" => 90.0}}])
+      violations = described_class.maximum_drop(result, {condition: 5}, mode: :median)
+      expect(violations).to contain_exactly(criterion: :condition, maximum: 5, actual: 40.0)
+    end
+
     it "treats a non-numeric last-run value as missing instead of raising" do
       result = instance_double(SimpleCov::Result, coverage_statistics: {line: line_stats})
       violations = described_class.maximum_drop(result, {line: 5}, last_run: {result: {line: "95.0"}})

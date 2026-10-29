@@ -13,6 +13,7 @@ SimpleCov.start do
     enable_coverage :branch, :method
     coverage(:branch) { ignore :eval_generated }
   end
+  enable_coverage :condition if ARGV.include?("condition")
 end
 
 require_relative "lib/loaded"

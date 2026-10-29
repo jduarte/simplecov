@@ -4,7 +4,7 @@ module SimpleCov
   module Formatter
     class JSONFormatter
       class ErrorsFormatter
-        CRITERION_KEYS = {line: :lines, branch: :branches, method: :methods}.freeze
+        CRITERION_KEYS = {line: :lines, branch: :branches, method: :methods, condition: :conditions}.freeze
         private_constant :CRITERION_KEYS
 
         class << self

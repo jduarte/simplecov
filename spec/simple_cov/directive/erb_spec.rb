@@ -90,19 +90,19 @@ RSpec.describe SimpleCov::Directive::Erb do
     end
 
     it "finds a block directive written as Ruby comments inside a code tag" do
-      expect(ranges_for(ruby_comments_in_code_tags)).to eq(line: [5..11], branch: [5..11], method: [5..11])
+      expect(ranges_for(ruby_comments_in_code_tags)).to eq(line: [5..11], branch: [5..11], method: [5..11], condition: [5..11])
     end
 
     it "finds a block directive written as an ERB comment tag" do
-      expect(ranges_for(comment_tags)).to eq(line: [2..6], branch: [], method: [])
+      expect(ranges_for(comment_tags)).to eq(line: [2..6], branch: [], method: [], condition: [])
     end
 
     it "treats an ERB comment tag trailing a code tag as inline" do
-      expect(ranges_for(trailing_comment_tag)).to eq(line: [2..2], branch: [2..2], method: [2..2])
+      expect(ranges_for(trailing_comment_tag)).to eq(line: [2..2], branch: [2..2], method: [2..2], condition: [2..2])
     end
 
     it "ignores a directive marker inside a string in a tag" do
-      expect(ranges_for(%(<%= "# simplecov:disable" %>\n<%= @footer %>\n))).to eq(line: [], branch: [], method: [])
+      expect(ranges_for(%(<%= "# simplecov:disable" %>\n<%= @footer %>\n))).to eq(line: [], branch: [], method: [], condition: [])
     end
   end
 end

@@ -27,6 +27,23 @@ RSpec.describe "A Ruby whose Prism cannot load" do
     end
   end
 
+  context "when condition coverage is asked for" do
+    let(:streams) do
+      Dir.chdir(File.join(__dir__, "fixtures", "unloadable_prism")) do
+        FileUtils.rm_rf("tmp")
+        Open3.capture3(child_env, RbConfig.ruby, "unloadable_prism.rb", "condition")
+      end
+    end
+
+    it "says it can't measure conditions" do
+      expect(streams[1]).to include("[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism")
+    end
+
+    it "reports the files all the same" do
+      expect(streams[0].lines).to include("lib/loaded.rb 100\n", "lib/never_loaded.rb 0\n")
+    end
+  end
+
   context "when branch and method coverage are enabled" do
     let(:output) { run_fixture("all") }
 

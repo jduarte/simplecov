@@ -1,0 +1,20 @@
+module SimpleCov
+  module ConditionCoverage
+    class Condition
+      type tuple = [Symbol, Integer, Integer, Integer, Integer, Integer]
+      type chain = [Integer, :evaluated | :short_circuited]
+
+      attr_reader tuple: tuple
+      attr_reader evaluated_tuple: tuple
+      attr_reader short_circuited_tuple: tuple
+      attr_reader write: bool
+      attr_reader chain: chain?
+
+      def initialize: (tuple: tuple, evaluated_tuple: tuple, short_circuited_tuple: tuple, write: bool, ?chain: chain?) -> void
+
+      def with: (?tuple: tuple, ?evaluated_tuple: tuple, ?short_circuited_tuple: tuple, ?write: bool, ?chain: chain?) -> Condition
+
+      def write?: () -> bool
+    end
+  end
+end

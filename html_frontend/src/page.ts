@@ -45,6 +45,7 @@ interface RenderState {
   lineCoverage: boolean;
   branchCoverage: boolean;
   methodCoverage: boolean;
+  conditionCoverage: boolean;
   contexts: string[] | null;
   production: ProductionData | null;
 }
@@ -68,6 +69,7 @@ export function renderPage(data: CoverageData): void {
   const lineCoverage = meta.line_coverage;
   const branchCoverage = meta.branch_coverage;
   const methodCoverage = meta.method_coverage;
+  const conditionCoverage = meta.condition_coverage === true;
   const primaryCoverage = activeCoverageType(meta);
 
   document.title = `Code coverage for ${meta.project_name}`;
@@ -91,6 +93,7 @@ export function renderPage(data: CoverageData): void {
       lineCoverage,
       branchCoverage,
       methodCoverage,
+      conditionCoverage,
       primaryCoverage,
       contextsEnabled: !!data.contexts,
       loadingContexts,
@@ -109,6 +112,7 @@ export function renderPage(data: CoverageData): void {
         lineCoverage,
         branchCoverage,
         methodCoverage,
+        conditionCoverage,
         primaryCoverage,
         contextsEnabled: !!data.contexts,
         loadingContexts,
@@ -121,7 +125,7 @@ export function renderPage(data: CoverageData): void {
   const idToFilename: Record<string, string> = {};
   for (const fn of allFiles) idToFilename[fileId(fn)] = fn;
   renderState = {
-    idToFilename, coverage: data.coverage, lineCoverage, branchCoverage, methodCoverage,
+    idToFilename, coverage: data.coverage, lineCoverage, branchCoverage, methodCoverage, conditionCoverage,
     contexts: data.contexts || null,
     production: data.production || null
   };
@@ -148,6 +152,7 @@ export function renderPage(data: CoverageData): void {
   }
   if (branchCoverage) rows.push(legendRow('branch', [legendItem('missed-branch', 'Missed branch')]));
   if (methodCoverage) rows.push(legendRow('method', [legendItem('missed-method', 'Missed method')]));
+  if (conditionCoverage) rows.push(legendRow('condition', [legendItem('missed-condition', 'Missed condition')]));
   document.getElementById('source-legend')!.innerHTML = rows.join('');
 }
 
@@ -163,7 +168,7 @@ export function materializeSourceFile(sourceFileId: string): HTMLElement | null 
   const existing = document.getElementById(sourceFileId);
   if (existing) return existing;
 
-  const { idToFilename, coverage, lineCoverage, branchCoverage, methodCoverage, contexts, production } = state();
+  const { idToFilename, coverage, lineCoverage, branchCoverage, methodCoverage, conditionCoverage, contexts, production } = state();
   const targetFilename = idToFilename[sourceFileId];
   if (!targetFilename) return null;
 
@@ -175,6 +180,7 @@ export function materializeSourceFile(sourceFileId: string): HTMLElement | null 
     methodCoverage,
     contexts || undefined,
     production ? (production.files[targetFilename] || null) : undefined,
+    conditionCoverage,
   );
   const container = document.querySelector('.source_files')!;
   const wrapper = document.createElement('div');

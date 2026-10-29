@@ -43,7 +43,8 @@ module SimpleCov
         SimpleCov.inject_unloaded_files(
           coverage, tracked_files.to_a,
           synthesize: carries?(coverage, "branches") || carries?(coverage, "methods"),
-          lines: carries?(coverage, "lines")
+          lines: carries?(coverage, "lines"),
+          conditions: carries?(coverage, "conditions")
         )
       end
 
@@ -65,7 +66,8 @@ module SimpleCov
       CRITERION_PREDICATES = {
         "lines" => :line_coverage?,
         "branches" => :branch_coverage?,
-        "methods" => :method_coverage?
+        "methods" => :method_coverage?,
+        "conditions" => :condition_coverage?
       }.freeze
       private_constant :CRITERION_PREDICATES
 

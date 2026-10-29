@@ -4,7 +4,7 @@ require "helper"
 
 RSpec.describe SimpleCov::Directive do
   describe ".disabled_ranges" do
-    def empty_ranges = {line: [], branch: [], method: []}
+    def empty_ranges = {line: [], branch: [], method: [], condition: []}
 
     def block_disable
       [
@@ -59,23 +59,23 @@ RSpec.describe SimpleCov::Directive do
     it "treats a bare disable/enable as targeting all categories" do
       ranges = described_class.disabled_ranges(["# simplecov:disable", "code", "# simplecov:enable"])
 
-      expect(ranges).to eq(line: [1..3], branch: [1..3], method: [1..3])
+      expect(ranges).to eq(line: [1..3], branch: [1..3], method: [1..3], condition: [1..3])
     end
 
     it "builds ranges between matching block disable/enable for the named category" do
-      expect(described_class.disabled_ranges(block_disable)).to eq(line: [2..5], branch: [], method: [])
+      expect(described_class.disabled_ranges(block_disable)).to eq(line: [2..5], branch: [], method: [], condition: [])
     end
 
     it "extends an unclosed disable to the end of file" do
       ranges = described_class.disabled_ranges(["x = 1", "# simplecov:disable", "y = 2", "z = 3"])
 
-      expect(ranges).to eq(line: [2..4], branch: [2..4], method: [2..4])
+      expect(ranges).to eq(line: [2..4], branch: [2..4], method: [2..4], condition: [2..4])
     end
 
     it "treats inline disable as a single-line range" do
       ranges = described_class.disabled_ranges(["x = 1", 'raise "absurd" # simplecov:disable', "y = 2"])
 
-      expect(ranges).to eq(line: [2..2], branch: [2..2], method: [2..2])
+      expect(ranges).to eq(line: [2..2], branch: [2..2], method: [2..2], condition: [2..2])
     end
 
     it "treats an inline simplecov:enable as a no-op (not a single-line disable)" do
@@ -86,7 +86,7 @@ RSpec.describe SimpleCov::Directive do
 
     it "tracks each category independently" do
       expect(described_class.disabled_ranges(independent_categories))
-        .to eq(line: [1..4], branch: [2..6], method: [2..6])
+        .to eq(line: [1..4], branch: [2..6], method: [2..6], condition: [])
     end
 
     it "ignores enable without a matching disable" do
@@ -101,7 +101,7 @@ RSpec.describe SimpleCov::Directive do
 
     it "tolerates whitespace around the marker, colon, and category separators" do
       expect(described_class.disabled_ranges(loose_whitespace))
-        .to eq(line: [1..3], branch: [5..7], method: [5..7])
+        .to eq(line: [1..3], branch: [5..7], method: [5..7], condition: [])
     end
 
     describe "free-form trailing reason" do
@@ -138,25 +138,25 @@ RSpec.describe SimpleCov::Directive do
       it "treats an unknown single token as a reason on the bare form (over-disables)" do
         ranges = described_class.disabled_ranges(["# simplecov:disable cyclomatic", "code"])
 
-        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2])
+        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2], condition: [1..2])
       end
 
       it "treats a reason that merely starts with a category name as the bare form" do
         ranges = described_class.disabled_ranges(["# simplecov:disable linear algebra reasons", "code"])
 
-        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2])
+        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2], condition: [1..2])
       end
 
       it "stops parsing categories at the first unrecognised entry, treats the rest as reason" do
         ranges = described_class.disabled_ranges(["# simplecov:disable line, frobnicate", "code"])
 
-        expect(ranges).to eq(line: [1..2], branch: [], method: [])
+        expect(ranges).to eq(line: [1..2], branch: [], method: [], condition: [])
       end
 
       it "accepts `all` as syntactic sugar for the bare form" do
         ranges = described_class.disabled_ranges(["# simplecov:disable all", "code"])
 
-        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2])
+        expect(ranges).to eq(line: [1..2], branch: [1..2], method: [1..2], condition: [1..2])
       end
 
       it "discards trailing punctuation as reason text" do
@@ -176,7 +176,7 @@ RSpec.describe SimpleCov::Directive do
       it "ignores an unknown mode" do
         ranges = described_class.disabled_ranges(["# simplecov:silence line", "code"])
 
-        expect(ranges).to eq(line: [], branch: [], method: [])
+        expect(ranges).to eq(line: [], branch: [], method: [], condition: [])
       end
 
       it "ignores lines containing invalid byte sequences" do
@@ -312,7 +312,7 @@ RSpec.describe SimpleCov::Directive do
     it "reads the other mode, and the bare form's categories, the same way" do
       directive = described_class.send(:parse_comment, ["code # simplecov:enable"], 1, 5, "# simplecov:enable")
 
-      expect(directive).to have_attributes(mode: :enable, categories: %i[line branch method], inline?: true)
+      expect(directive).to have_attributes(mode: :enable, categories: %i[line branch method condition], inline?: true)
     end
 
     it "reads no directive out of a comment that is not one" do
@@ -326,7 +326,7 @@ RSpec.describe SimpleCov::Directive do
     end
 
     it "names every category when a directive lists none" do
-      expect(described_class.send(:parse_categories, nil)).to eq(%i[line branch method])
+      expect(described_class.send(:parse_categories, nil)).to eq(%i[line branch method condition])
     end
 
     it "names the categories a directive lists" do

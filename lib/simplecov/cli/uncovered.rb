@@ -41,7 +41,7 @@ module SimpleCov
       end
 
       def unknown_criterion(criterion, stderr)
-        stderr.puts("simplecov uncovered: unknown --criterion #{criterion.inspect} (expected line, branch, or method)")
+        stderr.puts("simplecov uncovered: unknown --criterion #{criterion.inspect} (expected line, branch, method, or condition)")
         1
       end
 

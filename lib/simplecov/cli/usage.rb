@@ -81,13 +81,13 @@ module SimpleCov
           badge options:
             --input PATH              Read from PATH instead of #{cli.default_input}
             --output PATH             Write the badge to PATH instead of stdout
-            --criterion C             line, branch, or method (default: line)
+            --criterion C             line, branch, method, or condition (default: line)
             --label TEXT              The badge's left-side text (default: the criterion's, like "line coverage")
 
           uncovered options:
             --threshold N             Only show files below N% coverage
             --top N                   Show at most N files (default: 10)
-            --criterion C             line, branch, or method (default: line)
+            --criterion C             line, branch, method, or condition (default: line)
             --missing                 Append the missed line ranges to each row
             --annotate KIND           Emit CI annotations instead of rows: github, gitlab, rdjson, azure, teamcity, or buildkite
             --json                    Emit results as a JSON array (for CI)

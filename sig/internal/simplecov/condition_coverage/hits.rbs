@@ -1,0 +1,37 @@
+module SimpleCov
+  module ConditionCoverage
+    module Hits
+      type table = Hash[Condition::tuple, Hash[Condition::tuple, Integer]]
+
+      COUNTERS: Array[Array[Integer]]
+
+      PROBES: Array[Array[Probe]]
+
+      MUTEX: Thread::Mutex
+
+      EMPTY: Array[untyped]
+
+      @files: Array[[String, Array[Condition], ColumnMap]?]?
+
+      self.@files: Array[[String, Array[Condition], ColumnMap]?]?
+
+      def self?.reserve: () -> Integer
+
+      def self?.commit: (Integer file_index, String path, Array[Condition] conditions, ColumnMap column_map) -> void
+
+      def self?.result: () -> Hash[String, table]
+
+      def self?.column_maps: () -> Hash[String, ColumnMap]
+
+      private
+
+      def self?.files: () -> Array[[String, Array[Condition], ColumnMap]?]
+
+      def self?.table: (Array[Condition] conditions, Array[Integer] counters) -> table
+
+      def self?.arm_counts: (Array[Condition] conditions, Array[Integer] counters) -> Hash[Integer, [Integer, Integer]]
+
+      def self?.chained: (Condition::chain? chain, Integer evaluated, Integer skipped, Hash[Integer, [Integer, Integer]] arms) -> [Integer, Integer]
+    end
+  end
+end

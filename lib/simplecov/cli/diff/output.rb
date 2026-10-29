@@ -26,7 +26,8 @@ module SimpleCov
           [
             format_delta(row.fetch(:line_delta), "lines", color),
             (format_delta(row.fetch(:branch_delta), "branches", color) if row.fetch(:branch_delta).abs > EPSILON),
-            (format_delta(row.fetch(:method_delta), "methods", color) if row.fetch(:method_delta).abs > EPSILON)
+            (format_delta(row.fetch(:method_delta), "methods", color) if row.fetch(:method_delta).abs > EPSILON),
+            (format_delta(row.fetch(:condition_delta), "conditions", color) if row.fetch(:condition_delta).abs > EPSILON)
           ].compact
         end
 

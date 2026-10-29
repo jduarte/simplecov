@@ -117,7 +117,8 @@ module SimpleCov
           file: path,
           line: line_stats(payload["lines"], changed),
           branch: entry_stats(payload["branches"], changed),
-          method: entry_stats(payload["methods"], changed)
+          method: entry_stats(payload["methods"], changed),
+          condition: entry_stats(payload["conditions"], changed)
         }
       end
 
@@ -168,7 +169,8 @@ module SimpleCov
 
       def scored?(row)
         row.fetch(:line).fetch(:relevant).positive? ||
-          Output.measured?(row.fetch(:branch)) || Output.measured?(row.fetch(:method))
+          Output.measured?(row.fetch(:branch)) || Output.measured?(row.fetch(:method)) ||
+          Output.measured?(row[:condition])
       end
     end
   end

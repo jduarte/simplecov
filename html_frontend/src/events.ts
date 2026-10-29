@@ -5,7 +5,7 @@ import { contextsForSourceLine } from './page';
 import { toggleTestsPeek, setupTestsPeekDismissal } from './tests_peek';
 
 function getMissedLines(): HTMLElement[] {
-  return $$('.source-dialog .source_table li.missed, .source-dialog .source_table li.missed-branch, .source-dialog .source_table li.missed-method') as HTMLElement[];
+  return $$('.source-dialog .source_table li.missed, .source-dialog .source_table li.missed-branch, .source-dialog .source_table li.missed-method, .source-dialog .source_table li.missed-condition') as HTMLElement[];
 }
 
 export function jumpToMissedLine(direction: 1 | -1): void {

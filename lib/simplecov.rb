@@ -10,6 +10,8 @@ module SimpleCov
   # class working.
   CRITERION_TO_RUBY_COVERAGE = {
     branch: :branches,
+    # Not a Coverage mode: `start_coverage_measurement` takes it back out.
+    condition: :conditions,
     line: :lines,
     method: :methods,
     oneshot_line: :oneshot_lines
@@ -113,11 +115,28 @@ module SimpleCov
       start_arguments = coverage_criteria.to_h do |criterion|
         [CRITERION_TO_RUBY_COVERAGE.fetch(criterion), true]
       end
+      if start_arguments.delete(:conditions)
+        start_condition_coverage
+        # Bare `Coverage.start` is the legacy mode answering line arrays, not
+        # the per-file hashes conditions are merged into.
+        start_arguments[:lines] = true if start_arguments.empty?
+      end
 
       start_arguments[:eval] = true if coverage_for_eval_enabled?
 
       Coverage.start(**start_arguments) unless Coverage.running?
       start_test_tracking
+    end
+
+    # Condition coverage is measured by SimpleCov rather than by Ruby's
+    # Coverage, which still has to run: a run measuring conditions alone
+    # measures lines too, and nothing reports them.
+    def start_condition_coverage
+      return ConditionCoverage.install if condition_coverage_supported?
+      return if @condition_coverage_declined
+
+      @condition_coverage_declined = true
+      warn "[SimpleCov]: condition coverage needs CRuby 3.4.10+ or 4.0.4+ with Prism, so this run doesn't measure it."
     end
 
     # `Rake::TestTask` runs `ruby -e 'require "minitest/autorun"; ...'`, so
@@ -151,6 +170,7 @@ require_relative "simplecov/profiles"
 require_relative "simplecov/source_file/line"
 require_relative "simplecov/source_file/branch"
 require_relative "simplecov/source_file/method"
+require_relative "simplecov/source_file/condition"
 require_relative "simplecov/source_file"
 require_relative "simplecov/file_list"
 require_relative "simplecov/result"
@@ -187,6 +207,7 @@ require_relative "simplecov/combine/lines_combiner"
 require_relative "simplecov/combine/coverage_accumulator"
 require_relative "simplecov/combine/results_combiner"
 require_relative "simplecov/useless_results_remover"
+require_relative "simplecov/condition_coverage"
 require_relative "simplecov/simulate_coverage"
 require_relative "simplecov/unloaded_file_injector"
 require_relative "simplecov/view_coverage"

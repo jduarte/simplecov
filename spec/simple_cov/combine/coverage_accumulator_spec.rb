@@ -96,6 +96,12 @@ RSpec.describe SimpleCov::Combine::CoverageAccumulator do
     it "is false when the file carries no tables at all" do
       expect(described_class.file_executed?({})).to be(false)
     end
+
+    it "is true when a condition arm ran on a file with no line hit" do
+      conditions = {[:"&&", 0, 2, 4, 2, 10] => {[:evaluated, 0, 2, 9, 2, 10] => 1}}
+
+      expect(described_class.file_executed?({"lines" => [0, 0], "conditions" => conditions})).to be(true)
+    end
   end
 
   describe "#result" do
@@ -394,6 +400,102 @@ RSpec.describe SimpleCov::Combine::CoverageAccumulator do
         expect(merge(executed, empty_lines)["branches"].keys)
           .to contain_exactly([:if, 0, 2, 2, 4, 10], [:if, 0, 2, 2, 4, 12])
       end
+    end
+  end
+
+  describe "condition merging" do
+    before { allow(SimpleCov).to receive(:condition_coverage?).and_return(true) }
+
+    def with_conditions(lines, evaluated:, short_circuited:, id: 0, end_column: 10)
+      {
+        "lines" => lines,
+        "conditions" => {
+          [:"&&", id, 2, 4, 2, end_column] => {
+            [:evaluated, 2 * id, 2, 9, 2, end_column] => evaluated,
+            [:short_circuited, (2 * id) + 1, 2, 6, 2, 8] => short_circuited
+          }
+        }
+      }
+    end
+
+    def arms(merged) = merged.fetch("conditions").values.map(&:values)
+
+    it "sums each arm across executed runs, whatever ids each run gave the condition" do
+      merged = merge(
+        with_conditions([nil, 1], evaluated: 1, short_circuited: 0),
+        with_conditions([nil, 1], evaluated: 0, short_circuited: 3, id: 4)
+      )
+
+      expect(arms(merged)).to eq([[1, 3]])
+    end
+
+    it "drops a simulated file's conditions when the other side was executed" do
+      merged = merge(
+        with_conditions([nil, 0], evaluated: 0, short_circuited: 0, end_column: 12),
+        with_conditions([nil, 1], evaluated: 2, short_circuited: 0)
+      )
+
+      expect(merged.fetch("conditions").keys).to eq([[:"&&", 0, 2, 4, 2, 10]])
+    end
+
+    it "keeps the executed side's conditions when the simulated side comes second" do
+      merged = merge(
+        with_conditions([nil, 1], evaluated: 2, short_circuited: 0),
+        with_conditions([nil, 0], evaluated: 0, short_circuited: 0, end_column: 12)
+      )
+
+      expect(arms(merged)).to eq([[2, 0]])
+    end
+
+    it "unions the conditions of two runs neither of which executed the file" do
+      merged = merge(
+        with_conditions([nil, 0], evaluated: 0, short_circuited: 0),
+        with_conditions([nil, 0], evaluated: 0, short_circuited: 0, end_column: 12)
+      )
+
+      expect(merged.fetch("conditions").size).to eq(2)
+    end
+
+    it "keeps the accumulated conditions when a later resultset carries none" do
+      merged = merge(with_conditions([nil, 1], evaluated: 1, short_circuited: 1), {"lines" => [nil, 1]})
+
+      expect(arms(merged)).to eq([[1, 1]])
+    end
+
+    it "picks up a condition table only a later resultset carries" do
+      merged = merge({"lines" => [nil, 1]}, with_conditions([nil, 1], evaluated: 1, short_circuited: 1))
+
+      expect(arms(merged)).to eq([[1, 1]])
+    end
+
+    it "reports an empty table when no resultset carried conditions at all" do
+      expect(merge({"lines" => [nil, 1]}, {"lines" => [nil, 1]})["conditions"]).to eq({})
+    end
+
+    it "reports an empty table when the executed side measured no conditions" do
+      merged = merge(with_conditions([nil, 0], evaluated: 0, short_circuited: 0), {"lines" => [nil, 1]})
+
+      expect(merged["conditions"]).to eq({})
+    end
+
+    it "leaves the table out where nothing measures conditions" do
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(false)
+
+      expect(merge({"lines" => [nil, 1]}, {"lines" => [nil, 1]})).not_to have_key("conditions")
+    end
+
+    it "picks up a later resultset's conditions where nothing earlier started a table" do
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(false)
+      merged = merge({"lines" => [nil, 1]}, with_conditions([nil, 1], evaluated: 1, short_circuited: 1))
+
+      expect(arms(merged)).to eq([[1, 1]])
+    end
+
+    it "keeps conditions a resultset carried even where this process doesn't measure them" do
+      allow(SimpleCov).to receive(:condition_coverage?).and_return(false)
+      merged = merge(with_conditions([nil, 1], evaluated: 1, short_circuited: 0), {"lines" => [nil, 1]})
+
+      expect(arms(merged)).to eq([[1, 0]])
     end
   end
 

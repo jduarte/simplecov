@@ -3,19 +3,21 @@ import { escapeHTML } from './dom';
 import { fileId } from './format';
 import { renderCoverageSummary } from './render_cells';
 import { decodeFileContexts, loadingContextIndices, type FileContextIndex } from './contexts';
-import type { FileCoverage, BranchEntry, MethodEntry, ProductionFileEntry } from './types';
+import type { FileCoverage, BranchEntry, ConditionEntry, MethodEntry, ProductionFileEntry } from './types';
 
 interface LineStatusArgs {
   lineIndex: number;
   lineCov: number | null | 'ignored' | undefined;
   branchesReport: Record<number, [string, number][]>;
+  conditionsReport: Record<number, [string, number][]>;
   missedMethodLines: Set<number>;
   branchCoverage: boolean;
   methodCoverage: boolean;
+  conditionCoverage: boolean;
 }
 
 function lineStatus(args: LineStatusArgs): string {
-  const { lineIndex, lineCov, branchesReport, missedMethodLines, branchCoverage, methodCoverage } = args;
+  const { lineIndex, lineCov, branchesReport, conditionsReport, missedMethodLines, branchCoverage, methodCoverage, conditionCoverage } = args;
   const lineNum = lineIndex + 1;
 
   if (lineCov === 'ignored') return 'skipped';
@@ -23,6 +25,11 @@ function lineStatus(args: LineStatusArgs): string {
   if (branchCoverage) {
     const branches = branchesReport[lineNum];
     if (branches && branches.some(([, count]) => count === 0)) return 'missed-branch';
+  }
+
+  if (conditionCoverage) {
+    const conditions = conditionsReport[lineNum];
+    if (conditions && conditions.some(([, count]) => count === 0)) return 'missed-condition';
   }
 
   if (methodCoverage && missedMethodLines.has(lineNum)) return 'missed-method';
@@ -37,6 +44,20 @@ function buildBranchesReport(branches: BranchEntry[] | undefined): Record<number
     if (coverage === 'ignored') continue;
     const lineReport = report[reportLine] || (report[reportLine] = []);
     lineReport.push([type, coverage]);
+  }
+  return report;
+}
+
+// Each arm reads as its operator and what happened, `&& evaluated` or
+// `||= short-circuited`, on the operator's line. Ignored arms are left out,
+// as ignored branches are.
+function buildConditionsReport(conditions: ConditionEntry[] | undefined): Record<number, [string, number][]> {
+  const report: Record<number, [string, number][]> = {};
+  if (!conditions) return report;
+  for (const { coverage, report_line: reportLine, operator, type } of conditions) {
+    if (coverage === 'ignored') continue;
+    const lineReport = report[reportLine] || (report[reportLine] = []);
+    lineReport.push([`${operator} ${type.replace('_', '-')}`, coverage]);
   }
   return report;
 }
@@ -66,12 +87,13 @@ interface SourceLineArgs {
   status: string;
   branchCoverage: boolean;
   lineBranches?: [string, number][];
+  lineConditions?: [string, number][];
   testCount?: number;
   productionRan?: boolean;
 }
 
 function renderSourceLine(args: SourceLineArgs): string {
-  const { index, source, language, lineCov, status, branchCoverage, lineBranches, testCount, productionRan } = args;
+  const { index, source, language, lineCov, status, branchCoverage, lineBranches, lineConditions, testCount, productionRan } = args;
   const lineNum = index + 1;
   const hits = typeof lineCov === 'number' ? lineCov : null;
   const hitsAttr = hits === null ? '' : ` data-hits="${hits}"`;
@@ -104,6 +126,11 @@ function renderSourceLine(args: SourceLineArgs): string {
     }
   }
 
+  for (const [arm, hitCount] of lineConditions || []) {
+    const label = escapeHTML(arm);
+    lineHtml.push(`<span class="hits hits--condition" data-content="${label}: ${hitCount}" title="${label} hit ${hitCount} times"></span>`);
+  }
+
   lineHtml.push(`<code class="${language}">${escapeHTML(source)}</code></li>`);
   return lineHtml.join('');
 }
@@ -125,7 +152,8 @@ export function renderSourceFile(
   branchCoverage: boolean,
   methodCoverage: boolean,
   contexts?: string[],
-  production?: ProductionFileEntry | null
+  production?: ProductionFileEntry | null,
+  conditionCoverage = false
 ): string {
   const id = fileId(filename);
   const coveredLines = lineCoverage ? (data.covered_lines || 0) : 0;
@@ -134,11 +162,14 @@ export function renderSourceFile(
   const totalBranches = branchCoverage ? (data.total_branches || 0) : 0;
   const coveredMethods = methodCoverage ? (data.covered_methods || 0) : 0;
   const totalMethods = methodCoverage ? (data.total_methods || 0) : 0;
+  const coveredConditions = conditionCoverage ? (data.covered_conditions || 0) : 0;
+  const totalConditions = conditionCoverage ? (data.total_conditions || 0) : 0;
 
   const missedMethodsList = data.methods?.filter(m => m.coverage === 0) ?? [];
   const showMethodToggle = methodCoverage && missedMethodsList.length > 0;
 
   const branchesReport = buildBranchesReport(data.branches);
+  const conditionsReport = buildConditionsReport(data.conditions);
   const missedMethodLineSet = buildMissedMethodLines(data.methods);
   const language = languageFor(filename);
   const contextIndex: FileContextIndex | null =
@@ -152,8 +183,8 @@ export function renderSourceFile(
     const lineCov = data.lines?.[i];
     const hits = typeof lineCov === 'number' ? lineCov : null;
     let status = lineStatus({
-      lineIndex: i, lineCov, branchesReport,
-      missedMethodLines: missedMethodLineSet, branchCoverage, methodCoverage
+      lineIndex: i, lineCov, branchesReport, conditionsReport,
+      missedMethodLines: missedMethodLineSet, branchCoverage, methodCoverage, conditionCoverage
     });
     let testCount: number | undefined;
     if (contextIndex && hits) {
@@ -176,6 +207,7 @@ export function renderSourceFile(
       status,
       branchCoverage,
       lineBranches: branchCoverage ? branchesReport[i + 1] : undefined,
+      lineConditions: conditionCoverage ? conditionsReport[i + 1] : undefined,
       testCount,
       productionRan
     }));
@@ -189,12 +221,14 @@ export function renderSourceFile(
       coveredLines, totalLines,
       coveredBranches, totalBranches,
       coveredMethods, totalMethods,
-      lineCoverage, branchCoverage, methodCoverage, showMethodToggle,
+      coveredConditions, totalConditions,
+      lineCoverage, branchCoverage, methodCoverage, conditionCoverage, showMethodToggle,
       coveredByTests: contextIndex ? coveredLines - outsideLines : undefined,
       coveredOutsideTests: contextIndex ? outsideLines : undefined,
       linePercent: lineCoverage ? data.lines_covered_percent : undefined,
       branchPercent: branchCoverage ? data.branches_covered_percent : undefined,
-      methodPercent: methodCoverage ? data.methods_covered_percent : undefined
+      methodPercent: methodCoverage ? data.methods_covered_percent : undefined,
+      conditionPercent: conditionCoverage ? data.conditions_covered_percent : undefined
     })
   ];
 

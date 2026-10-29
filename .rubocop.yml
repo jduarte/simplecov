@@ -55,6 +55,7 @@ RSpec/DescribeClass:
     # exit codes, output streams, file formats, build artifacts), which
     # no single class owns.
     - "spec/assets_spec.rb"
+    - "spec/condition_coverage_loading_spec.rb"
     - "spec/config_loader_spec.rb"
     - "spec/coverage_for_eval_spec.rb"
     - "spec/deleted_source_spec.rb"
