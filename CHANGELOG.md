@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-29
+
+SimpleCov 1.4 adds condition coverage, an opt-in criterion for the `&&`, `||`, `and`, `or`, `&&=`, and `||=` that
+Ruby's `Coverage` never reports, raises the minimum Ruby to 3.4, narrows `simplecov affected` and `simplecov watch`
+to the methods a change touched, and lets a project declare the files whose change runs the full suite.
+
+**Upgrade notes:**
+
+- The minimum supported Ruby is now 3.4. JRuby 10 remains supported for line coverage.
+- SimpleCov depends on the `prism` gem. Nothing new installs on Ruby 3.4 or 4.0, which ship it as a default gem; on Ruby 4.1 it comes from the bundle.
+- Condition coverage is off unless `enable_coverage :condition` or `coverage :condition` turns it on, and then needs CRuby 3.4.10+ or 4.0.4+. Anywhere else `SimpleCov.start` warns and measures the other criteria as before.
+- `coverage.json` advances from schema 1.3 to 1.5, by way of 1.4 (`contexts_dropped`) and 1.5 (`conditions`). Both additions are optional keys, and schemas 1.3 and 1.4 stay frozen for pinned consumers.
+- `track_tests` records some tests under new ids: RSpec examples defined in a loop and shared examples take RSpec's own id (`spec/user_spec.rb[1:2]`), Minitest tests defined at one location add their name, and RSpec ids are relative to `SimpleCov.root` rather than the working directory. A test map recorded by an earlier version keeps its old ids until `coverage/` is cleared.
+- `simplecov affected` selects fewer tests for a change inside a method, and falls back to the full suite in more cases, such as a change to `test_helper.rb` or to code no recorded test ran. `--by-file` restores file-level selection.
+
 ### Added
 
 - Condition coverage, an opt-in criterion that reports whether each `&&`, `||`, `and`, `or`, `&&=`, and `||=` was seen both running its right operand and short-circuiting past it. Ruby's `Coverage` reports neither, so `allowed = user && user.admin?` read as fully covered under line and branch coverage even when no test ever reached `user.admin?`. `enable_coverage :condition`, or `coverage :condition, minimum: 90`, turns it on. SimpleCov then rewrites each in-scope file with Prism as Ruby loads it, wrapping each left operand in a counter, while line, branch, and method coverage keep describing the original source. Conditions merge across processes, appear at zero hits for files no process loaded, and take thresholds, `maximum_missed`, baseline entries, and `# simplecov:disable condition`. They show in the console summary, the HTML report (a column in the file list, arms annotated in the source view), and `coverage.json`, and every CLI command that takes a criterion accepts `condition`. `coverage :condition { ignore :memoized }` stops counting the cached path of `||=`. It needs CRuby 3.4.10+ or 4.0.4+, because earlier 3.4 and 4.0 releases drop `Coverage` data for code compiled from a string; anywhere else `SimpleCov.start` warns and measures the other criteria as usual. See [#921] and [Ruby Feature #22014](https://bugs.ruby-lang.org/issues/22014).
@@ -575,7 +590,8 @@ On a personal note from [@PragTob] thanks to [ruby together](https://rubytogethe
 
 Looking for older changelogs? Please check the [old Changelog](https://github.com/simplecov-ruby/simplecov/blob/main/docs/Changelog.old.md)
 
-[Unreleased]: https://github.com/simplecov-ruby/simplecov/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/jduarte/simplecov/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/jduarte/simplecov/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/simplecov-ruby/simplecov/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/simplecov-ruby/simplecov/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/simplecov-ruby/simplecov/compare/v1.2.0...v1.3.0
