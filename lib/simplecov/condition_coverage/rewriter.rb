@@ -91,6 +91,9 @@ module SimpleCov
         return write_splices(site, probe, rank) unless target
 
         method = site.condition.tuple.first.equal?(:"&&") ? "and_left" : "or_left"
+        inner = parenthesized(target)
+        return wrap(inner, rank, "#{probe}.#{method}(", true) if inner
+
         # `&&` and `||` take only operands valid as arguments; `and` and `or`
         # take statements, so theirs need checking.
         bare = site.node.operator_loc.slice.start_with?("&&", "||") || bare_argument?(target)
@@ -101,8 +104,27 @@ module SimpleCov
       def write_splices(site, probe, rank)
         node = site.node
         value = site.right
+        inner = parenthesized(value)
         wrap(node, rank, "#{probe}.write(", bare_argument?(node)) +
-          wrap(value, rank + 1, "#{probe}.value(", bare_argument?(value))
+          (inner ? wrap(inner, rank + 1, "#{probe}.value(", true) : wrap(value, rank + 1, "#{probe}.value(", bare_argument?(value)))
+      end
+
+      # The single statement an operand's own parentheses hold, when it's
+      # valid as an argument. Ruby runs a parenthesized statement's line event
+      # together with the enclosing statement's when nothing comes between
+      # them, and a probe wrapped outside the parentheses would come between
+      # them (`when (token = x) && y`) and split one event into two. Wrapped
+      # inside, the probe is the statement, so nothing does.
+      def parenthesized(node)
+        # @type var current: untyped
+        current = node
+        while current.is_a?(Prism::ParenthesesNode)
+          body = current.body
+          break unless body.is_a?(Prism::StatementsNode) && body.body.one?
+
+          current = body.body.first
+        end
+        current if !current.equal?(node) && bare_argument?(current)
       end
 
       def wrap(node, rank, call, bare)

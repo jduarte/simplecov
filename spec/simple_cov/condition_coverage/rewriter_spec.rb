@@ -100,8 +100,24 @@ RSpec.describe SimpleCov::ConditionCoverage::Rewriter, mutant_expression: "Simpl
       expect(described_class.call("a || b || c\n", 0)[1].map(&:chain)).to eq([[1, :short_circuited], nil])
     end
 
-    it "wraps a parenthesized inner condition whole, which isn't a chain" do
-      expect(rewrite("(a || b) && c\n")).to eq("P[0].and_left((P[1].or_left(a) || b)) && c\n")
+    it "wraps a parenthesized inner condition inside its parentheses, which isn't a chain" do
+      expect(rewrite("(a || b) && c\n")).to eq("(P[0].and_left(P[1].or_left(a) || b)) && c\n")
+    end
+
+    it "wraps inside every layer of single-statement parentheses" do
+      expect(rewrite("((a)) && b\n")).to eq("((P[0].and_left(a))) && b\n")
+    end
+
+    it "wraps an operand's parentheses whole where they hold more than one statement" do
+      expect(rewrite("(a; b) && c\n")).to eq("P[0].and_left((a; b)) && c\n")
+    end
+
+    it "wraps parentheses whole where what they hold isn't valid as an argument" do
+      expect(rewrite("(a or b) and c\n")).to eq("P[0].and_left((P[1].or_left(a) or b)) and c\n")
+    end
+
+    it "wraps an assignment's parenthesized value inside its parentheses" do
+      expect(rewrite("@x ||= (foo)\n")).to eq("P[0].write(@x ||= (P[0].value(foo)))\n")
     end
 
     it "opens the outer probe first where two start at one offset" do

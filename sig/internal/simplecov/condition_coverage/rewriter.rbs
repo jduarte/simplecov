@@ -26,6 +26,8 @@ module SimpleCov
 
       def self?.write_splices: (Collector::Site site, String probe, Integer rank) -> Array[Splice]
 
+      def self?.parenthesized: (untyped node) -> untyped
+
       def self?.wrap: (untyped node, Integer rank, String call, bool bare) -> Array[Splice]
 
       def self?.bare_argument?: (untyped node) -> bool
